@@ -1,0 +1,491 @@
+/* ===================================================================
+   BARBERÍA APP - Sistema de Herencia en Cascada
+   Dashboard es el PADRE - Todas las secciones heredan su diseño
+   =================================================================== */
+
+@import "tailwindcss";
+
+/* ===================================================================
+   VARIABLES CSS - Sistema de Herencia
+   =================================================================== */
+
+:root {
+  /* Colores Base del Dashboard (PADRE) */
+  --dashboard-primary: rgba(0, 122, 255, 0.08);
+  --dashboard-secondary: rgba(0, 122, 255, 0.02);
+  --dashboard-accent: rgba(0, 122, 255, 0.2);
+  
+  /* Colores Heredados para otras secciones (HIJOS) */
+  --admin-primary: rgba(156, 163, 175, 0.08);
+  --admin-secondary: rgba(156, 163, 175, 0.02);
+  --admin-accent: rgba(156, 163, 175, 0.2);
+  
+  /* Propiedades Heredadas (TODOS) */
+  --blur-base: 40px;
+  --blur-light: 20px;
+  --saturate: 180%;
+  --black-base: rgba(0, 0, 0, 0.4);
+  --black-medium: rgba(0, 0, 0, 0.7);
+  --border-color: rgba(255, 255, 255, 0.1);
+  
+  color-scheme: dark;
+}
+
+/* ===================================================================
+   BASE - Configuración Global
+   =================================================================== */
+
+html, body {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  background-color: #000000;
+  color: #ffffff;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===================================================================
+   CLASE PADRE - Dashboard Container (BASE)
+   Todas las secciones heredan de esta clase base
+   =================================================================== */
+
+.admin-container-base {
+  border-radius: clamp(1rem, 2vw, 1.5rem);
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  -webkit-backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  transition: all 0.3s ease;
+}
+
+/* Dashboard - Clase específica (usa colores azules) */
+.dashboard-container {
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-primary) 0%,
+    var(--dashboard-secondary) 50%,
+    var(--black-base) 100%
+  );
+}
+
+/* Secciones Admin - Heredan estructura, usan colores grises */
+.admin-container {
+  background: linear-gradient(
+    135deg,
+    var(--admin-primary) 0%,
+    var(--admin-secondary) 50%,
+    var(--black-base) 100%
+  );
+}
+
+/* ===================================================================
+   CLASE PADRE - Cards (BASE)
+   Todas las cards heredan de esta clase base
+   =================================================================== */
+
+.admin-card-base {
+  border-radius: clamp(0.75rem, 1.5vw, 1rem);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  -webkit-backdrop-filter: blur(var(--blur-base)) saturate(var(--saturate));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-card-base:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Dashboard Cards - Usa azul */
+.dashboard-card {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 122, 255, 0.12) 0%,
+    rgba(0, 122, 255, 0.05) 50%,
+    var(--black-medium) 100%
+  );
+}
+
+/* Admin Cards - Usa gris (HEREDA estructura) */
+.admin-card {
+  background: linear-gradient(
+    135deg,
+    rgba(156, 163, 175, 0.12) 0%,
+    rgba(156, 163, 175, 0.05) 50%,
+    var(--black-medium) 100%
+  );
+}
+
+/* ===================================================================
+   CLASE PADRE - Icon Backgrounds (BASE)
+   =================================================================== */
+
+.admin-icon-base {
+  backdrop-filter: blur(var(--blur-light));
+  -webkit-backdrop-filter: blur(var(--blur-light));
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.admin-icon-base:hover {
+  transform: scale(1.05);
+}
+
+/* Dashboard Icons - Azul */
+.dashboard-icon {
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-accent) 0%,
+    rgba(0, 122, 255, 0.1) 100%
+  );
+  border: 1px solid rgba(0, 122, 255, 0.3);
+}
+
+/* Admin Icons - Gris (HEREDA) */
+.admin-icon {
+  background: linear-gradient(
+    135deg,
+    var(--admin-accent) 0%,
+    rgba(156, 163, 175, 0.1) 100%
+  );
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+/* ===================================================================
+   SISTEMA DE INPUTS (HEREDADO)
+   =================================================================== */
+
+.admin-input-base {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(var(--blur-light));
+  -webkit-backdrop-filter: blur(var(--blur-light));
+  border: 1px solid rgba(156, 163, 175, 0.3);
+  border-radius: clamp(0.75rem, 1vw, 1rem);
+  padding: clamp(0.625rem, 1.5vw, 0.875rem) clamp(0.75rem, 2vw, 1rem);
+  color: white;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  outline: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.admin-input-base:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(156, 163, 175, 0.5);
+}
+
+.admin-input-base:focus {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 122, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* ===================================================================
+   SISTEMA DE BOTONES (HEREDADO)
+   =================================================================== */
+
+.admin-button-base {
+  border-radius: clamp(0.75rem, 1vw, 1rem);
+  padding: clamp(0.625rem, 1.5vw, 0.875rem) clamp(1rem, 2vw, 1.5rem);
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.admin-button-base:active {
+  transform: scale(0.98);
+}
+
+/* Botón Primario (Azul) - HEREDADO por todos */
+.admin-button-primary {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.9) 0%, rgba(0, 122, 255, 1) 100%);
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+  color: white;
+}
+
+.admin-button-primary:hover {
+  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Botón Secundario (Transparente) - HEREDADO */
+.admin-button-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(var(--blur-light));
+  -webkit-backdrop-filter: blur(var(--blur-light));
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.admin-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ===================================================================
+   SCROLLBARS (HEREDADO)
+   =================================================================== */
+
+.admin-scrollbar,
+.date-selector-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.admin-scrollbar::-webkit-scrollbar,
+.date-selector-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track,
+.date-selector-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb,
+.date-selector-container::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 10px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover,
+.date-selector-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Scrollbar para modales de factura (fondo blanco minimalista) */
+#edit-invoice-scroll-container .flex-1::-webkit-scrollbar {
+  width: 8px;
+}
+
+#edit-invoice-scroll-container .flex-1::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+#edit-invoice-scroll-container .flex-1::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+#edit-invoice-scroll-container .flex-1::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* ===================================================================
+   HELPERS (HEREDADOS)
+   =================================================================== */
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: clamp(0.75rem, 2vw, 1rem);
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(156, 163, 175, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input-wrapper input {
+  padding-left: clamp(2.5rem, 5vw, 3rem);
+}
+
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid rgba(156, 163, 175, 0.8);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.select-wrapper:focus-within::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* ===================================================================
+   OPTIMIZACIONES DE RENDIMIENTO
+   =================================================================== */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role="button"] {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+img {
+  image-rendering: -webkit-optimize-contrast;
+  will-change: transform;
+}
+
+/* ===================================================================
+   SISTEMA COMPLETO DE HERENCIA EN CASCADA
+   Dashboard (PADRE) → Todas las secciones (HIJOS)
+   COMPATIBILIDAD CROSS-BROWSER (Edge, Brave, Chrome, Firefox, Safari)
+   =================================================================== */
+
+/* Container Principal - Gray (Clientes/Reservas) - IGUAL AL DASHBOARD */
+.admin-section-container {
+  /* Gradiente GRIS igual al Dashboard (pero gris en lugar de azul) */
+  background: linear-gradient(
+    135deg,
+    rgba(156, 163, 175, 0.08) 0%,
+    rgba(156, 163, 175, 0.02) 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  ) !important;
+  
+  /* Backdrop filter con TODOS los prefijos */
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  -moz-backdrop-filter: blur(40px) saturate(180%) !important;
+  -ms-backdrop-filter: blur(40px) saturate(180%) !important;
+  -o-backdrop-filter: blur(40px) saturate(180%) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+}
+
+/* Fallback SOLO para Brave sin soporte de backdrop-filter */
+@supports not ((-webkit-backdrop-filter: blur(40px)) or (backdrop-filter: blur(40px))) {
+  .admin-section-container {
+    /* Fondo más opaco solo si NO hay backdrop-filter */
+    background: linear-gradient(
+      135deg,
+      rgba(75, 85, 99, 0.92) 0%,
+      rgba(85, 95, 109, 0.92) 50%,
+      rgba(50, 55, 65, 0.92) 100%
+    ) !important;
+  }
+}
+
+/* Stats Icons - Gray IGUAL AL DASHBOARD */
+.admin-stat-icon-bg {
+  /* Gradiente GRIS igual al Dashboard */
+  background: linear-gradient(135deg, rgba(156, 163, 175, 0.2) 0%, rgba(156, 163, 175, 0.1) 100%) !important;
+  
+  /* Backdrop con todos los prefijos */
+  -webkit-backdrop-filter: blur(20px) !important;
+  -moz-backdrop-filter: blur(20px) !important;
+  -ms-backdrop-filter: blur(20px) !important;
+  -o-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(20px) !important;
+  
+  border: 1px solid rgba(156, 163, 175, 0.3) !important;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(20px)) or (backdrop-filter: blur(20px))) {
+  .admin-stat-icon-bg {
+    /* Más opaco solo si NO hay backdrop-filter */
+    background: linear-gradient(135deg, rgba(156, 163, 175, 0.35) 0%, rgba(156, 163, 175, 0.25) 100%) !important;
+}
+}
+
+/* ===================================================================
+   GLASSCARD dentro de admin sections - IGUAL AL DASHBOARD (GRIS)
+   =================================================================== */
+
+/* Cuando GlassCard está dentro de admin-section-container, usa paleta GRIS */
+.admin-section-container .glass-card-base {
+  /* Gradiente GRIS igual al Dashboard pero con gris en lugar de azul */
+  background: linear-gradient(135deg, rgba(156, 163, 175, 0.12) 0%, rgba(156, 163, 175, 0.05) 50%, rgba(0, 0, 0, 0.7) 100%) !important;
+  
+  /* Backdrop filters */
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  -moz-backdrop-filter: blur(40px) saturate(180%) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(40px)) or (backdrop-filter: blur(40px))) {
+  .admin-section-container .glass-card-base {
+    /* Más opaco solo si NO hay backdrop-filter */
+    background: linear-gradient(135deg, rgba(75, 85, 99, 0.85) 0%, rgba(85, 95, 109, 0.8) 50%, rgba(0, 0, 0, 0.9) 100%) !important;
+  }
+}
+
+/* ===================================================================
+   SCROLLBAR HIDE - Ocultar scrollbar manteniendo funcionalidad
+   =================================================================== */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom Premium Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(250, 204, 107, 0.2) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 204, 107, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

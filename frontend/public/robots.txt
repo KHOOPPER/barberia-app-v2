@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Deshabilitar indexacion del panel administrativo (ruta por defecto)
+Disallow: /admin/
+Disallow: /admin/*
+
+# IMPORTANTE: Reemplace "https://tudominio.com" con su dominio real antes de desplegar
+Sitemap: https://tudominio.com/sitemap.xml

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <script>
+      (function () {
+        // Vite reemplaza %VITE_ADMIN_PATH% si esta definido.
+        // Si no esta definido, quedara como literal y se usara el fallback.
+        var v = "%VITE_ADMIN_PATH%";
+        var resolved = (v && !String(v).includes("VITE_ADMIN_PATH") ? v : "/admin").trim();
+        if (!resolved) resolved = "/admin";
+        if (!resolved.startsWith("/")) resolved = "/" + resolved;
+        window.__ADMIN_PATH__ = resolved.replace(/\/+$/, "");
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>BarberShop Premium | Barbería Exclusiva</title>
+
+    <!-- ============================
+         SEO PRINCIPAL
+    ============================= -->
+    <meta
+      name="description"
+      content="Barbería premium con expertos en corte y estilo. Agenda tu cita online de manera rápida y sencilla."
+    />
+    <meta
+      name="keywords"
+      content="barbería, barber shop, barbería premium, corte de cabello, fade, barba, citas online"
+    />
+
+    <!-- OpenGraph (Facebook / WhatsApp) -->
+    <meta property="og:title" content="BarberShop Premium | Barbería Exclusiva" />
+    <meta
+      property="og:description"
+      content="Barbería premium con citas online. Cortes modernos, fades y barba perfecta."
+    />
+    <meta property="og:image" content="/images/seo-cover.png" />
+    <meta property="og:url" content="https://tusitio.com/" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Tema navegador -->
+    <meta name="theme-color" content="#0d0d0d" />
+
+    <!-- ============================
+         PWA - MANIFEST DINÁMICO
+    ============================= -->
+    <!-- Scripts externos para cumplir con CSP sin 'unsafe-inline' -->
+    <script src="/manifest-loader.js"></script>
+    <script src="/icon-loader.js"></script>
+
+    <!-- iOS PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/icons/barber-192.png" id="apple-icon" />
+
+    <!-- ============================
+         FAVICON
+    ============================= -->
+    <link rel="icon" type="image/png" href="/icons/barber-192.png" />
+
+    <!-- Tipografía -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    />
+  </head>
+
+  <body class="bg-black text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

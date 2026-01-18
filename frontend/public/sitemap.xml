@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Página principal -->
+  <url>
+    <loc>https://tudominio.com/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.00</priority>
+  </url>
+
+  <!-- Página de citas (alta prioridad para conversión) -->
+  <url>
+    <loc>https://tudominio.com/citas</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Servicios -->
+  <url>
+    <loc>https://tudominio.com/servicios</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- Barberos -->
+  <url>
+    <loc>https://tudominio.com/barberos</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Quiénes somos -->
+  <url>
+    <loc>https://tudominio.com/quienes-somos</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+</urlset>
+
+<!-- 
+  INSTRUCCIONES PARA CONFIGURACIÓN:
+  
+  1. Reemplace todas las ocurrencias de "https://tudominio.com" con su dominio real
+  2. Actualice las fechas <lastmod> con la fecha actual o la última modificación del contenido
+  3. Después de desplegar, envíe este sitemap a Google Search Console:
+     - Acceda a https://search.google.com/search-console
+     - Agregue su propiedad (sitio web)
+     - Vaya a "Sitemaps" en el menú lateral
+     - Ingrese la URL: https://sudominio.com/sitemap.xml
+     - Haga clic en "Enviar"
+  
+  4. Para verificar que funciona correctamente:
+     - Visite: https://sudominio.com/sitemap.xml
+     - Debe mostrar el XML sin errores
+-->
