@@ -7,6 +7,44 @@ import * as authService from "../services/auth.service.js";
 import { HTTP_STATUS } from "../constants/index.js";
 
 /**
+ * Devuelve opciones consistentes para cookies de auth.
+ * Importante:
+ * - En producción (Render + Vercel = cross-site), se requiere SameSite=None y Secure=true
+ * - En desarrollo, usamos Lax para permitir distintos puertos/orígenes locales
+ */
+function getCookieOptions() {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Permite override por env si lo necesitas (opcional)
+  // Valores válidos: "none" | "lax" | "strict"
+  const envSameSite = process.env.COOKIE_SAMESITE?.toLowerCase();
+  const sameSite =
+    envSameSite === "none" || envSameSite === "lax" || envSameSite === "strict"
+      ? envSameSite
+      : isProduction
+        ? "none"
+        : "lax";
+
+  // Secure debe ser true si sameSite es none (requisito de navegadores)
+  const secure = isProduction ? true : false;
+
+  const base = {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: "/",
+  };
+
+  // Si defines COOKIE_DOMAIN, asegúrate que tenga sentido para tu caso.
+  // En Render (onrender.com) normalmente NO necesitas domain.
+  if (process.env.COOKIE_DOMAIN) {
+    base.domain = process.env.COOKIE_DOMAIN;
+  }
+
+  return base;
+}
+
+/**
  * @route POST /api/auth/login
  * @desc Autentica un usuario y devuelve token JWT en cookie httpOnly
  * @access Public
@@ -17,35 +55,26 @@ export const login = async (req, res, next) => {
 
     const result = await authService.login(username, password);
 
-    // Configurar opciones de cookies httpOnly
-    const cookieOptions = {
-      httpOnly: true, // Previene acceso desde JavaScript (XSS protection)
-      secure: process.env.NODE_ENV === "production", // Solo HTTPS en producción
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Lax en desarrollo para permitir diferentes puertos/orígenes
-      path: "/", // Disponible en toda la aplicación
-      // Configuración adicional de seguridad
-      ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }), // Dominio explícito si se configura
-    };
+    const cookieOptions = getCookieOptions();
 
-    // Establecer access token (15 minutos)
+    // Access token (15 minutos)
     res.cookie("authToken", result.accessToken, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000, // 15 minutos
+      maxAge: 15 * 60 * 1000,
     });
 
-    // Establecer refresh token (7 días)
+    // Refresh token (7 días)
     res.cookie("refreshToken", result.refreshToken, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Enviar respuesta sin el token en el body (por seguridad)
+    // Respuesta sin token en body (manteniendo tu diseño actual)
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: "Login exitoso",
       data: {
         user: result.user,
-        // Token NO se envía en el body, solo en cookie httpOnly
       },
     });
   } catch (error) {
@@ -65,42 +94,30 @@ export const refresh = async (req, res, next) => {
     if (!refreshToken) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
-        error: {
-          message: "Refresh token no proporcionado",
-        },
+        error: { message: "Refresh token no proporcionado" },
       });
     }
 
     const result = await authService.refreshAccessToken(refreshToken);
 
-    // Configurar opciones de cookies httpOnly
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      path: "/",
-      // Configuración adicional de seguridad
-      ...(process.env.COOKIE_DOMAIN && { domain: process.env.COOKIE_DOMAIN }), // Dominio explícito si se configura
-    };
+    const cookieOptions = getCookieOptions();
 
-    // Establecer nuevo access token (15 minutos)
+    // Nuevo access token (15 minutos)
     res.cookie("authToken", result.accessToken, {
       ...cookieOptions,
-      maxAge: 15 * 60 * 1000, // 15 minutos
+      maxAge: 15 * 60 * 1000,
     });
 
-    // Establecer nuevo refresh token (7 días) - rotación de tokens
+    // Rotación refresh token (7 días)
     res.cookie("refreshToken", result.refreshToken, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: "Token renovado exitosamente",
-      data: {
-        user: result.user,
-      },
+      message: "Token renovado exitoso",
+      data: { user: result.user },
     });
   } catch (error) {
     next(error);
@@ -113,14 +130,9 @@ export const refresh = async (req, res, next) => {
  * @access Public
  */
 export const logout = async (req, res) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    path: "/",
-  };
+  const cookieOptions = getCookieOptions();
 
-  // Eliminar ambas cookies (access token y refresh token)
+  // IMPORTANT: clearCookie debe usar mismas opciones (sameSite/secure/domain/path)
   res.clearCookie("authToken", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);
 
@@ -129,11 +141,3 @@ export const logout = async (req, res) => {
     message: "Logout exitoso",
   });
 };
-
-
-
-
-
-
-
-
