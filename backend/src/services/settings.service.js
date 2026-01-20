@@ -5,7 +5,7 @@
 
 import { pool } from "../config/db.js";
 import logger from "../utils/logger.js";
-import { DEFAULT_LOGO_URL, DEFAULT_BACKGROUND_URL, DEFAULT_ADMIN_BACKGROUND_URL } from "../constants/imageDefaults.js";
+import { DEFAULT_LOGO_URL, DEFAULT_BACKGROUND_URL, DEFAULT_ADMIN_BACKGROUND_URL, DEFAULT_HERO_IMAGES } from "../constants/imageDefaults.js";
 
 /**
  * Obtiene una configuración por su clave
@@ -248,10 +248,10 @@ export const getHomepageVideoConfig = async () => {
     `);
 
     const config = {
-      type: 'default',
+      type: 'images',
       url: '',
       file: '',
-      images: []
+      images: DEFAULT_HERO_IMAGES
     };
 
     result.rows.forEach(row => {
@@ -261,10 +261,21 @@ export const getHomepageVideoConfig = async () => {
       if (row.key === 'homepage_hero_images') config.images = row.value ? JSON.parse(row.value) : [];
     });
 
+    // Si el tipo es default o null, forzar modo imágenes con defaults
+    if (!config.type || config.type === 'default') {
+      config.type = 'images';
+      config.images = DEFAULT_HERO_IMAGES;
+    }
+
+    // Si es modo imágenes pero no hay ninguna, usar defaults
+    if (config.type === 'images' && (!config.images || config.images.length === 0)) {
+      config.images = DEFAULT_HERO_IMAGES;
+    }
+
     return config;
   } catch (error) {
     logger.error("Error al obtener config de video", { error: error.message });
-    return { type: 'default', url: '', file: '' };
+    return { type: 'images', url: '', file: '', images: DEFAULT_HERO_IMAGES };
   }
 };
 

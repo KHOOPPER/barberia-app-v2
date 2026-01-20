@@ -50,6 +50,15 @@ export const DEFAULT_BACKGROUND_URL = `https://placehold.co/${BACKGROUND_SIZE}/0
 export const DEFAULT_ADMIN_BACKGROUND_URL = `https://placehold.co/${BACKGROUND_SIZE}/0f172a/475569?text=Admin`;
 
 /**
+ * URLs genéricas para imágenes del hero
+ */
+export const DEFAULT_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1585747860715-2ba37b01d43a?q=80&w=2074&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1503951914875-452162b7f30a?q=80&w=2070&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1621605815971-fbc98d665033?q=80&w=2070&auto=format&fit=crop"
+];
+
+/**
  * Función helper para obtener imagen por defecto según el tipo
  * @param {string} type - Tipo de imagen (product, service, barber, offer, logo, background, admin_background)
  * @returns {string} URL de imagen genérica
