@@ -144,7 +144,8 @@ const corsOptions = {
     }
 
     // Validar que el origen esté en la lista blanca explícita
-    if (!origin || allowedOrigins.includes(origin)) {
+    // También permitir cualquier subdominio de vercel.app para previews
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
       callback(null, true);
     } else {
       logger.warn("CORS: Origen no permitido", { origin, allowedOrigins });
