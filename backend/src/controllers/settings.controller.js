@@ -104,7 +104,7 @@ export const uploadBackground = async (req, res, next) => {
     const imageUrl = `/src/assets/${req.file.filename}`;
 
     // Guardar en la base de datos según el tipo
-    if (type === 'admin') {
+    if (type === "admin") {
       await settingsService.setAdminBackgroundImage(imageUrl);
     } else {
       await settingsService.setBackgroundImage(imageUrl);
@@ -112,7 +112,8 @@ export const uploadBackground = async (req, res, next) => {
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: `Imagen de fondo ${type === 'admin' ? 'del panel administrativo' : 'de la página pública'} subida correctamente`,
+      message: `Imagen de fondo ${type === "admin" ? "del panel administrativo" : "de la página pública"
+        } subida correctamente`,
       data: { imageUrl, type },
     });
   } catch (error) {
@@ -136,7 +137,6 @@ export const uploadLogo = async (req, res, next) => {
       });
     }
 
-    // El archivo ya está guardado en frontend/src/assets/logo.[ext]
     // Para la URL, usamos /src/assets/ ya que el frontend lo sirve desde ahí
     const imageUrl = `/src/assets/${req.file.filename}`;
 
@@ -209,13 +209,13 @@ export const getCurrentLogo = async (req, res, next) => {
 
 /**
  * @route GET /api/settings/offers_section_enabled o /api/settings/products_section_enabled
- * @desc Obtiene un setting público específico (offers_section_enabled, products_section_enabled)
+ * @desc Obtiene un setting público específico
  * @access Public
  */
 export const getPublicSetting = async (req, res, next) => {
   try {
     // Extraer el key de la ruta (offers_section_enabled o products_section_enabled)
-    const key = req.path.split('/').pop();
+    const key = req.path.split("/").pop();
     const setting = await settingsService.getSetting(key);
 
     // Evitar caché del navegador
@@ -247,8 +247,8 @@ export const getPublicSetting = async (req, res, next) => {
  */
 export const getHours = async (req, res, next) => {
   try {
-    const workingHours = await settingsService.getSetting('working_hours');
-    const closedDays = await settingsService.getSetting('closed_days');
+    const workingHours = await settingsService.getSetting("working_hours");
+    const closedDays = await settingsService.getSetting("closed_days");
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -271,8 +271,8 @@ export const updateHours = async (req, res, next) => {
   try {
     const { workingHours, closedDays } = req.body;
 
-    await settingsService.setSetting('working_hours', JSON.stringify(workingHours));
-    await settingsService.setSetting('closed_days', JSON.stringify(closedDays || []));
+    await settingsService.setSetting("working_hours", JSON.stringify(workingHours));
+    await settingsService.setSetting("closed_days", JSON.stringify(closedDays || []));
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -291,18 +291,20 @@ export const updateHours = async (req, res, next) => {
  */
 export const getNotifications = async (req, res, next) => {
   try {
-    const notifications = await settingsService.getSetting('notifications');
+    const notifications = await settingsService.getSetting("notifications");
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      data: notifications?.value ? JSON.parse(notifications.value) : {
-        emailEnabled: false,
-        smsEnabled: false,
-        reminderHours: 24,
-        reminderEnabled: true,
-        confirmationEnabled: true,
-        cancellationEnabled: true,
-      },
+      data: notifications?.value
+        ? JSON.parse(notifications.value)
+        : {
+          emailEnabled: false,
+          smsEnabled: false,
+          reminderHours: 24,
+          reminderEnabled: true,
+          confirmationEnabled: true,
+          cancellationEnabled: true,
+        },
     });
   } catch (error) {
     next(error);
@@ -318,7 +320,7 @@ export const updateNotifications = async (req, res, next) => {
   try {
     const notifications = req.body;
 
-    await settingsService.setSetting('notifications', JSON.stringify(notifications));
+    await settingsService.setSetting("notifications", JSON.stringify(notifications));
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -427,9 +429,9 @@ const isValidYouTubeUrl = (url) => {
   const patterns = [
     /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/,
     /^https?:\/\/youtu\.be\/[\w-]+/,
-    /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/
+    /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/,
   ];
-  return patterns.some(pattern => pattern.test(url));
+  return patterns.some((pattern) => pattern.test(url));
 };
 
 /**
@@ -459,10 +461,10 @@ export const updateHomepageVideo = async (req, res, next) => {
   try {
     const { videoUrl } = req.body;
 
-    console.log('📝 Actualizando video, datos recibidos:', { videoUrl, body: req.body });
+    console.log("📝 Actualizando video, datos recibidos:", { videoUrl, body: req.body });
 
     if (!videoUrl || !videoUrl.trim()) {
-      console.log('❌ Validación falló: URL vacía o solo espacios');
+      console.log("❌ Validación falló: URL vacía o solo espacios");
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
@@ -472,11 +474,11 @@ export const updateHomepageVideo = async (req, res, next) => {
     }
 
     const trimmedUrl = videoUrl.trim();
-    console.log('🔍 URL después de trim:', trimmedUrl);
+    console.log("🔍 URL después de trim:", trimmedUrl);
 
     // Validar que sea una URL de YouTube válida
     if (!isValidYouTubeUrl(trimmedUrl)) {
-      console.log('❌ Validación falló: URL no es de YouTube válida');
+      console.log("❌ Validación falló: URL no es de YouTube válida");
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
@@ -485,18 +487,18 @@ export const updateHomepageVideo = async (req, res, next) => {
       });
     }
 
-    console.log('✅ Validación exitosa, actualizando en BD...');
+    console.log("✅ Validación exitosa, actualizando en BD...");
     const userId = req.user?.id;
     await settingsService.updateHomepageVideoUrl(trimmedUrl, userId);
 
-    console.log('✅ Video actualizado correctamente');
+    console.log("✅ Video actualizado correctamente");
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: "Video de la página principal actualizado correctamente",
       data: { videoUrl: trimmedUrl },
     });
   } catch (error) {
-    console.error('❌ Error en updateHomepageVideo:', error);
+    console.error("❌ Error en updateHomepageVideo:", error);
     next(error);
   }
 };
@@ -519,7 +521,7 @@ export const getHomepageVideoConfig = async (req, res, next) => {
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      data: config
+      data: config,
     });
   } catch (error) {
     next(error);
@@ -535,41 +537,41 @@ export const updateHomepageVideoConfig = async (req, res, next) => {
   try {
     const { type, url } = req.body;
 
-    console.log('📝 Actualizando config de video:', { type, url });
+    console.log("📝 Actualizando config de video:", { type, url });
 
     // Validar tipo
-    if (!['default', 'upload', 'youtube', 'drive'].includes(type)) {
+    if (!["default", "upload", "youtube", "drive"].includes(type)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'Tipo de video inválido' }
+        error: { message: "Tipo de video inválido" },
       });
     }
 
     // Validar URL si es youtube o drive
-    if (type === 'youtube' && url && !isValidYouTubeUrl(url)) {
+    if (type === "youtube" && url && !isValidYouTubeUrl(url)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'URL de YouTube inválida' }
+        error: { message: "URL de YouTube inválida" },
       });
     }
 
-    if (type === 'drive' && url && !isValidGoogleDriveUrl(url)) {
+    if (type === "drive" && url && !isValidGoogleDriveUrl(url)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'URL de Google Drive inválida' }
+        error: { message: "URL de Google Drive inválida" },
       });
     }
 
     const userId = req.user?.id;
-    await settingsService.updateHomepageVideoConfig(type, url || '', '', userId);
+    await settingsService.updateHomepageVideoConfig(type, url || "", "", userId);
 
-    console.log('✅ Config de video actualizada');
+    console.log("✅ Config de video actualizada");
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: 'Configuración de video actualizada correctamente'
+      message: "Configuración de video actualizada correctamente",
     });
   } catch (error) {
-    console.error('❌ Error en updateHomepageVideoConfig:', error);
+    console.error("❌ Error en updateHomepageVideoConfig:", error);
     next(error);
   }
 };
@@ -581,12 +583,12 @@ export const updateHomepageVideoConfig = async (req, res, next) => {
  */
 export const uploadHomepageVideo = async (req, res, next) => {
   try {
-    console.log('Subiendo video, archivo recibido:', req.file?.originalname);
+    console.log("Subiendo video, archivo recibido:", req.file?.originalname);
 
     if (!req.file) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'No se recibió ningún archivo' }
+        error: { message: "No se recibió ningún archivo" },
       });
     }
 
@@ -594,16 +596,16 @@ export const uploadHomepageVideo = async (req, res, next) => {
     if (req.file.size > 50 * 1024 * 1024) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'El archivo es demasiado grande (máx 50MB)' }
+        error: { message: "El archivo es demasiado grande (máx 50MB)" },
       });
     }
 
     // Validar formato
-    const allowedFormats = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const allowedFormats = ["video/mp4", "video/webm", "video/quicktime"];
     if (!allowedFormats.includes(req.file.mimetype)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        error: { message: 'Formato no soportado. Use MP4, WebM o MOV' }
+        error: { message: "Formato no soportado. Use MP4, WebM o MOV" },
       });
     }
 
@@ -613,18 +615,56 @@ export const uploadHomepageVideo = async (req, res, next) => {
     console.log("Controller: Path received from saveUploadedVideo:", filePath);
 
     // Actualizar configuración para usar el archivo subido
-    console.log("Controller: Calling updateHomepageVideoConfig with:", { type: 'upload', url: '', file: filePath });
-    await settingsService.updateHomepageVideoConfig('upload', '', filePath, userId);
+    console.log("Controller: Calling updateHomepageVideoConfig with:", {
+      type: "upload",
+      url: "",
+      file: filePath,
+    });
+    await settingsService.updateHomepageVideoConfig("upload", "", filePath, userId);
 
-    console.log('Video subido correctamente:', filePath);
+    console.log("Video subido correctamente:", filePath);
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: 'Video subido correctamente',
-      data: { filePath }
+      message: "Video subido correctamente",
+      data: { filePath },
     });
   } catch (error) {
-    console.error('Error en uploadHomepageVideo:', error);
+    console.error("Error en uploadHomepageVideo:", error);
     next(error);
   }
 };
 
+/**
+ * @route POST /api/settings/homepage-hero-images
+ * @desc Sube hasta 3 imágenes para el hero de la página principal
+ * @access Private (Admin)
+ *
+ * Nota: Esta función EXISTE para que la ruta no reviente (antes estaba undefined).
+ * Asegúrate de servir la carpeta /uploads como estática en tu app.js si quieres acceder a las imágenes por URL.
+ */
+export const uploadHeroImages = async (req, res, next) => {
+  try {
+    const files = req.files || [];
+
+    if (!files.length) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: { message: "No se recibieron imágenes" },
+      });
+    }
+
+    // multer guarda en uploads/hero/; generamos URLs públicas sugeridas
+    const imageUrls = files.map((f) => `/uploads/hero/${f.filename}`);
+
+    // Guarda en settings (puedes cambiar la key si ya usas otra en tu proyecto)
+    await settingsService.setSetting("homepage_hero_images", JSON.stringify(imageUrls));
+
+    return res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: "Imágenes del hero actualizadas correctamente",
+      data: { imageUrls },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
