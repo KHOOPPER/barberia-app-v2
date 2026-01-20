@@ -22,10 +22,15 @@ async function refreshToken() {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      // Si no hay refresh token en local, intentamos llamar igual por si hay cookie (fallback)
+
       const url = `${API_BASE_URL}/auth/refresh`;
       const response = await fetch(url, {
         method: "POST",
-        credentials: "include", // Incluir cookies (refresh token en cookie httpOnly)
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ refreshToken }) // Enviar también en body
       });
 
       const data = await response.json();
@@ -34,10 +39,11 @@ async function refreshToken() {
         throw new Error(data.error?.message || "Error al renovar token");
       }
 
-      // El nuevo access token se guarda automáticamente en cookie httpOnly por el backend
-      // Actualizar usuario en localStorage si viene en la respuesta
-      if (data.success && data.data?.user) {
-        localStorage.setItem("user", JSON.stringify(data.data.user));
+      // Actualizar tokens en localStorage
+      if (data.success && data.data) {
+        if (data.data.accessToken) localStorage.setItem("accessToken", data.data.accessToken);
+        if (data.data.refreshToken) localStorage.setItem("refreshToken", data.data.refreshToken);
+        if (data.data.user) localStorage.setItem("user", JSON.stringify(data.data.user));
       }
 
       return data;
@@ -74,8 +80,11 @@ export async function apiRequest(endpoint, options = {}, isRetry = false) {
     ...options,
   };
 
-  // No es necesario agregar token manualmente - las cookies httpOnly se envían automáticamente
-  // El backend lee el token de las cookies
+  // Agregar token Bearer si existe
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(url, config);
@@ -170,10 +179,12 @@ export async function del(endpoint, options = {}) {
  */
 export async function login(username, password) {
   const response = await post("/auth/login", { username, password });
-  
-  // Guardar usuario en localStorage (solo información del usuario, no el token)
-  if (response.success && response.data?.user) {
-    localStorage.setItem("user", JSON.stringify(response.data.user));
+
+  // Guardar tokens y usuario en localStorage
+  if (response.success && response.data) {
+    if (response.data.user) localStorage.setItem("user", JSON.stringify(response.data.user));
+    if (response.data.accessToken) localStorage.setItem("accessToken", response.data.accessToken);
+    if (response.data.refreshToken) localStorage.setItem("refreshToken", response.data.refreshToken);
   }
 
   return response;
@@ -190,9 +201,11 @@ export async function logout() {
     // Ignorar errores de logout (puede que la cookie ya esté eliminada)
     console.warn("Error al hacer logout:", error);
   }
-  
-  // Limpiar datos locales del usuario
+
+  // Limpiar datos locales
   localStorage.removeItem("user");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
 }
 
 /**

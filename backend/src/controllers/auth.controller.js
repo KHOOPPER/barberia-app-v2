@@ -69,12 +69,14 @@ export const login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Respuesta sin token en body (manteniendo tu diseño actual)
+    // Respuesta con token en body (para compatibilidad cross-site where cookies are blocked)
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: "Login exitoso",
       data: {
         user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       },
     });
   } catch (error) {
@@ -89,7 +91,7 @@ export const login = async (req, res, next) => {
  */
 export const refresh = async (req, res, next) => {
   try {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.body.refreshToken || req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -117,7 +119,11 @@ export const refresh = async (req, res, next) => {
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: "Token renovado exitoso",
-      data: { user: result.user },
+      data: {
+        user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      },
     });
   } catch (error) {
     next(error);
