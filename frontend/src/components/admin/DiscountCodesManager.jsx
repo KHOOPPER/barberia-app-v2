@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../ui/GlassCard";
 import DatePicker from "../ui/DatePicker";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 
 export default function DiscountCodesManager({ displayOnly = false, showFormOutside = false }) {
   const [discountCodes, setDiscountCodes] = useState([]);
@@ -38,15 +39,7 @@ export default function DiscountCodesManager({ displayOnly = false, showFormOuts
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/discounts?includeInactive=true`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar los códigos de descuento");
-      }
-
-      const response = await res.json();
+      const response = await apiRequest("/discounts?includeInactive=true");
       const codesData = response.data || response || [];
       setDiscountCodes(Array.isArray(codesData) ? codesData : []);
     } catch (err) {
@@ -178,26 +171,16 @@ export default function DiscountCodesManager({ displayOnly = false, showFormOuts
         is_active: formData.is_active,
       };
 
-      let res;
       if (editingId) {
-        res = await fetch(`${API_BASE_URL}/discounts/${editingId}`, {
+        await apiRequest(`/discounts/${editingId}`, {
           method: "PUT",
-          headers,
-          credentials: "include", // Incluir cookies httpOnly
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch(`${API_BASE_URL}/discounts`, {
+        await apiRequest("/discounts", {
           method: "POST",
-          headers,
-          credentials: "include", // Incluir cookies httpOnly
           body: JSON.stringify(payload),
         });
-      }
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al guardar el código de descuento");
       }
 
       resetForm();
@@ -224,15 +207,9 @@ export default function DiscountCodesManager({ displayOnly = false, showFormOuts
     try {
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/discounts/${codeToDelete}`, {
+      await apiRequest(`/discounts/${codeToDelete}`, {
         method: "DELETE",
-        credentials: "include", // Incluir cookies httpOnly
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al eliminar el código de descuento");
-      }
 
       setShowDeleteModal(false);
       setCodeToDelete(null);

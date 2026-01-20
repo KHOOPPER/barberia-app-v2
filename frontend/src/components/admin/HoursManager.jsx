@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { Clock, Calendar, Save, X, Plus, Trash2 } from "lucide-react";
-import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 
 const DAYS_OF_WEEK = [
   { id: 0, name: 'Domingo', short: 'Dom' },
@@ -40,18 +40,13 @@ export default function HoursManager() {
 
   const loadHours = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/hours`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data?.workingHours) {
-          // Mergear con valores por defecto para asegurar que todos los días estén presentes
-          setWorkingHours({ ...workingHours, ...data.data.workingHours });
-        }
-        if (data.data?.closedDays) {
-          setClosedDays(data.data.closedDays || []);
-        }
+      const data = await apiRequest("/settings/hours");
+      if (data.data?.workingHours) {
+        // Mergear con valores por defecto para asegurar que todos los días estén presentes
+        setWorkingHours({ ...workingHours, ...data.data.workingHours });
+      }
+      if (data.data?.closedDays) {
+        setClosedDays(data.data.closedDays || []);
       }
     } catch (err) {
       console.error("Error al cargar horarios:", err);
@@ -64,19 +59,13 @@ export default function HoursManager() {
       setError(null);
       setSuccess(false);
 
-      const res = await fetch(`${API_BASE_URL}/settings/hours`, {
+      await apiRequest("/settings/hours", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({
           workingHours,
           closedDays,
         }),
       });
-
-      if (!res.ok) {
-        throw new Error("Error al guardar horarios");
-      }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

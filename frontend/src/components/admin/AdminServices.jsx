@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, Scissors, Users, DollarSign, Clock, Package } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 import logo from "../../assets/logo.png";
 
 const ServiceCard = memo(({ service, onEdit, onDelete }) => {
@@ -173,15 +174,8 @@ export default function AdminServices() {
       setError(null);
 
       // Agregar timestamp para evitar caché y pedir todos los servicios (activos e inactivos)
-      const response = await fetch(`${API_BASE_URL}/services?includeInactive=true&t=${new Date().getTime()}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error("No se pudieron cargar los servicios");
-      }
-
-      const resJson = await response.json();
+      // Agregar timestamp para evitar caché y pedir todos los servicios (activos e inactivos)
+      const resJson = await apiRequest(`/services?includeInactive=true&t=${new Date().getTime()}`);
       setServices(resJson.data || resJson || []);
     } catch (err) {
       console.error(err);
@@ -301,9 +295,9 @@ export default function AdminServices() {
       setSubmitting(true);
       setError(null);
 
-      const url = editingId
-        ? `${API_BASE_URL}/services/${editingId}`
-        : `${API_BASE_URL}/services`;
+      const endpoint = editingId
+        ? `/services/${editingId}`
+        : `/services`;
 
       const method = editingId ? "PUT" : "POST";
 
@@ -317,19 +311,12 @@ export default function AdminServices() {
         payload.id = formData.id;
       }
 
-      const response = await fetch(url, {
+      await apiRequest(endpoint, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Incluir cookies httpOnly
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error?.message || "Error al guardar el servicio");
-      }
+
 
       await fetchServices();
       setSuccessMessage(editingId ? "Servicio actualizado correctamente" : "Servicio creado correctamente");
@@ -358,22 +345,9 @@ export default function AdminServices() {
       setError(null);
       setShowDeleteModal(false);
 
-      const res = await fetch(`${API_BASE_URL}/services/${serviceToDelete}`, {
+      await apiRequest(`/services/${serviceToDelete}`, {
         method: "DELETE",
-        credentials: "include", // Incluir cookies httpOnly
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "Error al eliminar servicio";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        throw new Error(errorMessage);
-      }
 
       await fetchServices();
       setSuccessMessage("Servicio eliminado correctamente");

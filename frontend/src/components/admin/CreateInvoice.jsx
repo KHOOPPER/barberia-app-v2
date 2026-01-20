@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Plus, Minus, Trash2, Save, Tag, ShoppingBag, Scissors, Gift, User, Phone } from "lucide-react";
-import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 
 /**
  * Formatea el precio
@@ -103,15 +103,15 @@ export default function CreateInvoice({ onClose, onSave }) {
     const fetchItems = async () => {
       try {
         setLoading(true);
-        const [servicesRes, productsRes, offersRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/services?forInvoice=true`),
-          fetch(`${API_BASE_URL}/products?forInvoice=true`),
-          fetch(`${API_BASE_URL}/offers?forInvoice=true`)
+        const [servicesData, productsData, offersData] = await Promise.all([
+          apiRequest("/services?forInvoice=true").catch(() => ({ data: [] })),
+          apiRequest("/products?forInvoice=true").catch(() => ({ data: [] })),
+          apiRequest("/offers?forInvoice=true").catch(() => ({ data: [] }))
         ]);
 
-        if (servicesRes.ok) setServices((await servicesRes.json()).data || []);
-        if (productsRes.ok) setProducts((await productsRes.json()).data || []);
-        if (offersRes.ok) setOffers((await offersRes.json()).data || []);
+        setServices(servicesData.data || []);
+        setProducts(productsData.data || []);
+        setOffers(offersData.data || []);
       } catch (err) {
         console.error("Error al cargar items:", err);
         setError("Error al cargar los items disponibles");
@@ -213,14 +213,11 @@ export default function CreateInvoice({ onClose, onSave }) {
     try {
       setDiscountError(null);
       const subtotal = calculateSubtotal();
-      const res = await fetch(`${API_BASE_URL}/discounts/validate`, {
+      const res = await apiRequest("/discounts/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ code: discountCode.trim().toUpperCase(), totalAmount: subtotal }),
       });
-      if (!res.ok) throw new Error("Código de descuento no válido");
-      const discount = (await res.json()).data;
+      const discount = res.data;
       let discountAmount = parseFloat(discount.discountAmount || 0);
       if (!discountAmount) {
         if (discount.discount_type === 'percentage') {
@@ -275,10 +272,8 @@ export default function CreateInvoice({ onClose, onSave }) {
         serviceLabel = "Factura - Solo Productos";
       }
 
-      const reservationRes = await fetch(`${API_BASE_URL}/reservations`, {
+      const reservationRes = await apiRequest("/reservations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           serviceId: serviceId,
           serviceLabel: serviceLabel,
@@ -289,17 +284,11 @@ export default function CreateInvoice({ onClose, onSave }) {
         }),
       });
 
-      if (!reservationRes.ok) {
-        const errorData = await reservationRes.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al crear la reserva");
-      }
-      const { data } = await reservationRes.json();
+      const { data } = reservationRes;
       const reservationId = data.reservationId || data.id;
 
-      await fetch(`${API_BASE_URL}/reservations/${reservationId}/items`, {
+      await apiRequest(`/reservations/${reservationId}/items`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           items: invoiceItems.map(item => ({
             ...item,
@@ -309,10 +298,8 @@ export default function CreateInvoice({ onClose, onSave }) {
         }),
       });
 
-      await fetch(`${API_BASE_URL}/reservations/${reservationId}/status`, {
+      await apiRequest(`/reservations/${reservationId}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ status: "confirmada" }),
       });
 

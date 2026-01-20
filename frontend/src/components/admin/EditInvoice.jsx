@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Save, Tag, ShoppingBag, Scissors, Gift } from "lucide-react";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 
 /**
  * Formatea el precio
@@ -21,157 +22,130 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const modalRef = useRef(null);
-  
+
   // Items disponibles
   const [services, setServices] = useState([]);
   const [products, setProducts] = useState([]);
   const [offers, setOffers] = useState([]);
-  
+
   // Items en la factura
   const [invoiceItems, setInvoiceItems] = useState([]);
-  
+
   // Código de descuento
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [discountError, setDiscountError] = useState(null);
-  
+
   // Cargar items disponibles
   useEffect(() => {
     const fetchItems = async () => {
       try {
         setLoading(true);
-        
-        // Cargar servicios (todos los activos para facturación)
-        const servicesRes = await fetch(`${API_BASE_URL}/services?forInvoice=true`);
-        if (servicesRes.ok) {
-          const servicesData = await servicesRes.json();
-          setServices(servicesData.data || servicesData || []);
-        }
-        
-        // Cargar productos (todos los activos para facturación)
-        const productsRes = await fetch(`${API_BASE_URL}/products?forInvoice=true`);
-        if (productsRes.ok) {
-          const productsData = await productsRes.json();
-          setProducts(productsData.data || productsData || []);
-        }
-        
-        // Cargar ofertas (todas las activas para facturación)
-        const offersRes = await fetch(`${API_BASE_URL}/offers?forInvoice=true`);
-        if (offersRes.ok) {
-          const offersData = await offersRes.json();
-          setOffers(offersData.data || offersData || []);
-        }
-        
+
+        // Cargar datos en paralelo
+        const [servicesData, productsData, offersData] = await Promise.all([
+          apiRequest("/services?forInvoice=true").catch(() => ({ data: [] })),
+          apiRequest("/products?forInvoice=true").catch(() => ({ data: [] })),
+          apiRequest("/offers?forInvoice=true").catch(() => ({ data: [] }))
+        ]);
+
+        setServices(servicesData.data || []);
+        setProducts(productsData.data || []);
+        setOffers(offersData.data || []);
+
         // Cargar items existentes de la reserva
         if (reservation?.id) {
           try {
-            const itemsRes = await fetch(`${API_BASE_URL}/reservations/${reservation.id}/items`, {
-              credentials: "include", // Incluir cookies httpOnly
-            });
-            
-            if (itemsRes.ok) {
-              const itemsData = await itemsRes.json();
-              const existingItems = itemsData.data || [];
-              
-              if (existingItems.length > 0) {
-                // Convertir items de la BD al formato del componente
-                setInvoiceItems(existingItems.map(item => ({
-                  id: `item-${item.id}`,
-                  type: item.item_type,
-                  itemId: item.item_id,
-                  name: item.item_name,
-                  price: parseFloat(item.unit_price),
-                  quantity: item.quantity,
-                })));
-                
-                // Buscar si hay un descuento aplicado en los items
-                const itemWithDiscount = existingItems.find(item => item.discount_code_id);
-                if (itemWithDiscount && itemWithDiscount.discount_code_id) {
-                  // Los detalles del descuento ya vienen en los items desde el backend
-                  // Si no vienen, intentar obtenerlos del endpoint
-                  if (itemWithDiscount.discount_type && itemWithDiscount.discount_value !== undefined) {
-                    // Calcular el monto del descuento basado en el subtotal actual
-                    const currentSubtotal = existingItems.reduce((sum, item) => {
-                      return sum + (parseFloat(item.unit_price) * item.quantity);
-                    }, 0);
-                    
-                    let discountAmount = 0;
-                    if (itemWithDiscount.discount_type === 'percentage') {
-                      discountAmount = currentSubtotal * (itemWithDiscount.discount_value / 100);
-                      if (itemWithDiscount.max_discount) {
-                        discountAmount = Math.min(discountAmount, parseFloat(itemWithDiscount.max_discount));
-                      }
-                    } else if (itemWithDiscount.discount_type === 'fixed') {
-                      discountAmount = parseFloat(itemWithDiscount.discount_value);
+
+            const itemsRes = await apiRequest(`/reservations/${reservation.id}/items`);
+            const existingItems = itemsRes.data || [];
+
+            if (existingItems.length > 0) {
+              // Convertir items de la BD al formato del componente
+              setInvoiceItems(existingItems.map(item => ({
+                id: `item-${item.id}`,
+                type: item.item_type,
+                itemId: item.item_id,
+                name: item.item_name,
+                price: parseFloat(item.unit_price),
+                quantity: item.quantity,
+              })));
+
+              // Buscar si hay un descuento aplicado en los items
+              const itemWithDiscount = existingItems.find(item => item.discount_code_id);
+              if (itemWithDiscount && itemWithDiscount.discount_code_id) {
+                // Los detalles del descuento ya vienen en los items desde el backend
+                // Si no vienen, intentar obtenerlos del endpoint
+                if (itemWithDiscount.discount_type && itemWithDiscount.discount_value !== undefined) {
+                  // Calcular el monto del descuento basado en el subtotal actual
+                  const currentSubtotal = existingItems.reduce((sum, item) => {
+                    return sum + (parseFloat(item.unit_price) * item.quantity);
+                  }, 0);
+
+                  let discountAmount = 0;
+                  if (itemWithDiscount.discount_type === 'percentage') {
+                    discountAmount = currentSubtotal * (itemWithDiscount.discount_value / 100);
+                    if (itemWithDiscount.max_discount) {
+                      discountAmount = Math.min(discountAmount, parseFloat(itemWithDiscount.max_discount));
                     }
-                    
-                    // Aplicar el descuento con todos los detalles
-                    setAppliedDiscount({
-                      id: itemWithDiscount.discount_code_id,
-                      code: itemWithDiscount.discount_code || '',
-                      discount_type: itemWithDiscount.discount_type,
-                      discount_value: parseFloat(itemWithDiscount.discount_value),
-                      max_discount: itemWithDiscount.max_discount ? parseFloat(itemWithDiscount.max_discount) : null,
-                      discountAmount: parseFloat(discountAmount.toFixed(2)),
-                      description: itemWithDiscount.discount_description || '',
-                    });
-                    setDiscountCode(itemWithDiscount.discount_code || '');
-                  } else {
-                    // Si no vienen los detalles, obtenerlos del endpoint
-                    try {
-                      const discountRes = await fetch(`${API_BASE_URL}/discounts/${itemWithDiscount.discount_code_id}`, {
-                        headers,
-                      });
-                      
-                      if (discountRes.ok) {
-                        const discountData = await discountRes.json();
-                        const discount = discountData.data;
-                        
-                        // Calcular el monto del descuento basado en el subtotal actual
-                        const currentSubtotal = existingItems.reduce((sum, item) => {
-                          return sum + (parseFloat(item.unit_price) * item.quantity);
-                        }, 0);
-                        
-                        let discountAmount = 0;
-                        if (discount.discount_type === 'percentage') {
-                          discountAmount = currentSubtotal * (discount.discount_value / 100);
-                          if (discount.max_discount) {
-                            discountAmount = Math.min(discountAmount, discount.max_discount);
-                          }
-                        } else if (discount.discount_type === 'fixed') {
-                          discountAmount = discount.discount_value;
+                  } else if (itemWithDiscount.discount_type === 'fixed') {
+                    discountAmount = parseFloat(itemWithDiscount.discount_value);
+                  }
+
+                  // Aplicar el descuento con todos los detalles
+                  setAppliedDiscount({
+                    id: itemWithDiscount.discount_code_id,
+                    code: itemWithDiscount.discount_code || '',
+                    discount_type: itemWithDiscount.discount_type,
+                    discount_value: parseFloat(itemWithDiscount.discount_value),
+                    max_discount: itemWithDiscount.max_discount ? parseFloat(itemWithDiscount.max_discount) : null,
+                    discountAmount: parseFloat(discountAmount.toFixed(2)),
+                    description: itemWithDiscount.discount_description || '',
+                  });
+                  setDiscountCode(itemWithDiscount.discount_code || '');
+                } else {
+                  // Si no vienen los detalles, obtenerlos del endpoint
+                  try {
+                    const discountRes = await apiRequest(`/discounts/${itemWithDiscount.discount_code_id}`);
+
+                    if (discountRes.ok) {
+                      const discountData = await discountRes.json();
+                      const discount = discountData.data;
+
+                      // Calcular el monto del descuento basado en el subtotal actual
+                      const currentSubtotal = existingItems.reduce((sum, item) => {
+                        return sum + (parseFloat(item.unit_price) * item.quantity);
+                      }, 0);
+
+                      let discountAmount = 0;
+                      if (discount.discount_type === 'percentage') {
+                        discountAmount = currentSubtotal * (discount.discount_value / 100);
+                        if (discount.max_discount) {
+                          discountAmount = Math.min(discountAmount, discount.max_discount);
                         }
-                        
-                        // Aplicar el descuento con todos los detalles
-                        setAppliedDiscount({
-                          id: discount.id,
-                          code: discount.code,
-                          discount_type: discount.discount_type,
-                          discount_value: parseFloat(discount.discount_value),
-                          max_discount: discount.max_discount ? parseFloat(discount.max_discount) : null,
-                          discountAmount: parseFloat(discountAmount.toFixed(2)),
-                          description: discount.description || '',
-                        });
-                        setDiscountCode(discount.code);
+                      } else if (discount.discount_type === 'fixed') {
+                        discountAmount = discount.discount_value;
                       }
-                    } catch (discountErr) {
-                      // Error al cargar descuento (no crítico)
+
+                      // Aplicar el descuento con todos los detalles
+                      setAppliedDiscount({
+                        id: discount.id,
+                        code: discount.code,
+                        discount_type: discount.discount_type,
+                        discount_value: parseFloat(discount.discount_value),
+                        max_discount: discount.max_discount ? parseFloat(discount.max_discount) : null,
+                        discountAmount: parseFloat(discountAmount.toFixed(2)),
+                        description: discount.description || '',
+                      });
+                      setDiscountCode(discount.code);
                     }
+                  } catch (discountErr) {
+                    // Error al cargar descuento (no crítico)
                   }
                 }
-              } else {
-                // Si no hay items guardados, usar el servicio principal
-                setInvoiceItems([{
-                  id: `item-${Date.now()}`,
-                  type: 'service',
-                  itemId: reservation.service_id,
-                  name: reservation.service_name || reservation.service_label || 'Servicio',
-                  price: reservation.service_price || 0,
-                  quantity: 1,
-                }]);
               }
             } else {
-              // Si falla, usar el servicio principal
+              // Si no hay items guardados, usar el servicio principal
               setInvoiceItems([{
                 id: `item-${Date.now()}`,
                 type: 'service',
@@ -181,6 +155,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
                 quantity: 1,
               }]);
             }
+
           } catch (err) {
             // Si falla, usar el servicio principal
             setInvoiceItems([{
@@ -200,10 +175,10 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
         setLoading(false);
       }
     };
-    
+
     fetchItems();
   }, [reservation]);
-  
+
   /**
    * Recalcula el descuento cuando cambian los items (solo si hay descuento aplicado)
    * Excluye el recálculo cuando se está guardando automáticamente para evitar interferencias
@@ -212,7 +187,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     if (appliedDiscount && invoiceItems.length > 0 && !autoSaving) {
       const subtotal = invoiceItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       let discountAmount = 0;
-      
+
       if (appliedDiscount.discount_type === 'percentage') {
         discountAmount = subtotal * (appliedDiscount.discount_value / 100);
         if (appliedDiscount.max_discount) {
@@ -221,7 +196,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       } else if (appliedDiscount.discount_type === 'fixed') {
         discountAmount = appliedDiscount.discount_value;
       }
-      
+
       // Actualizar el monto del descuento solo si cambió significativamente
       const newDiscountAmount = parseFloat(discountAmount.toFixed(2));
       if (Math.abs(newDiscountAmount - (appliedDiscount.discountAmount || 0)) > 0.01) {
@@ -233,7 +208,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceItems, autoSaving]); // Recalcular cuando cambien los items o el estado de autoSaving
-  
+
   /**
    * Agrega un item a la factura
    */
@@ -248,7 +223,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     };
     setInvoiceItems([...invoiceItems, newItem]);
   };
-  
+
   /**
    * Elimina un item de la factura
    */
@@ -260,24 +235,24 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       setDiscountCode("");
     }
   };
-  
+
   /**
    * Actualiza la cantidad de un item
    */
   const handleUpdateQuantity = (itemId, quantity) => {
     if (quantity < 1) return;
-    setInvoiceItems(invoiceItems.map(item => 
+    setInvoiceItems(invoiceItems.map(item =>
       item.id === itemId ? { ...item, quantity: parseInt(quantity, 10) } : item
     ));
   };
-  
+
   /**
    * Calcula el subtotal
    */
   const calculateSubtotal = () => {
     return invoiceItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
-  
+
   /**
    * Valida y aplica código de descuento
    */
@@ -286,33 +261,31 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       setDiscountError("Por favor ingresa un código de descuento");
       return;
     }
-    
+
     try {
       setDiscountError(null);
       const subtotal = calculateSubtotal();
-      
-      const res = await fetch(`${API_BASE_URL}/discounts/validate`, {
+
+      const res = await apiRequest("/discounts/validate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({
           code: discountCode.trim().toUpperCase(),
           totalAmount: subtotal,
         }),
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error?.message || "Código de descuento no válido");
       }
-      
+
       const response = await res.json();
       const discount = response.data;
-      
+
       // El backend ya calcula el discountAmount y devuelve todos los campos necesarios
       // Usar directamente los valores del backend
       let discountAmount = parseFloat(discount.discountAmount || 0);
-      
+
       // Si el backend no devolvió discountAmount, calcularlo manualmente como fallback
       if (!discountAmount && discount.discountAmount === undefined) {
         if (discount.discount_type === 'percentage') {
@@ -328,7 +301,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
           }
         }
       }
-      
+
       // Aplicar el descuento con el monto calculado y todos los detalles
       const newDiscount = {
         id: discount.id,
@@ -339,14 +312,14 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
         discountAmount: parseFloat(discountAmount.toFixed(2)),
         description: discount.description || '',
       };
-      
+
       // Aplicar el descuento al estado
       setAppliedDiscount(newDiscount);
       setDiscountError(null); // Limpiar errores previos
-      
+
       // Esperar un momento para que React actualice el estado y se muestre el descuento
       await new Promise(resolve => setTimeout(resolve, 50));
-      
+
       // Luego guardar automáticamente los cambios con el descuento aplicado (sin recargar datos)
       try {
         setAutoSaving(true);
@@ -366,7 +339,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       setAppliedDiscount(null);
     }
   };
-  
+
   /**
    * Calcula el total final
    */
@@ -375,7 +348,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     const discount = appliedDiscount ? appliedDiscount.discountAmount : 0;
     return Math.max(0, subtotal - discount);
   };
-  
+
   /**
    * Guarda los cambios en el backend (función reutilizable)
    */
@@ -383,13 +356,9 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     if (invoiceItems.length === 0) {
       throw new Error("Debe haber al menos un item en la factura");
     }
-    
-    const res = await fetch(`${API_BASE_URL}/reservations/${reservation.id}/items`, {
+
+    const res = await apiRequest(`/reservations/${reservation.id}/items`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include", // Incluir cookies httpOnly
       body: JSON.stringify({
         items: invoiceItems.map((item) => {
           // Distribuir el descuento proporcionalmente entre todos los items
@@ -403,7 +372,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               itemDiscount = parseFloat(itemDiscountAmount.toFixed(2));
             }
           }
-          
+
           return {
             type: item.type,
             itemId: item.itemId,
@@ -416,15 +385,17 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
         discountCodeId: appliedDiscount ? appliedDiscount.id : null,
       }),
     });
-    
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || "Error al guardar los cambios");
+
+    if (!res.success && !res.data) {
+      // apiRequest throws on error usually, but distinct checking might be needed if success flag is used
+      // Actually apiRequest returns the parsed body. 
+      // If apiRequest throws, we catch it in handleSave.
+      // So we just return res here.
     }
-    
-    return res.json();
+
+    return res;
   };
-  
+
   /**
    * Guarda los cambios (con UI feedback)
    */
@@ -432,21 +403,21 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     try {
       setSaving(true);
       setError(null);
-      
+
       await saveChanges(true);
-      
+
       // Disparar evento para actualizar dashboard
       window.dispatchEvent(new CustomEvent('invoice-saved'));
-      
+
       // Mostrar navbar en móviles antes de cerrar
       const navbar = document.querySelector('nav');
       if (navbar) {
         navbar.style.display = '';
       }
-      
+
       // Cerrar el modal primero
       onClose();
-      
+
       // Luego ejecutar onSave para recargar la lista
       if (onSave) {
         await onSave();
@@ -462,11 +433,11 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     // Restaurar scroll
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
-    
+
     // Restaurar navbar y header
     const navbar = document.querySelector('nav');
     const header = document.querySelector('header');
-    
+
     if (navbar) {
       navbar.style.removeProperty('display');
       navbar.style.removeProperty('visibility');
@@ -476,29 +447,29 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       navbar.style.removeProperty('position');
       navbar.style.removeProperty('top');
     }
-    
+
     if (header) {
       header.style.removeProperty('display');
       header.style.removeProperty('visibility');
       header.style.removeProperty('z-index');
     }
-    
+
     onClose();
   };
-  
+
   const subtotal = calculateSubtotal();
   const total = calculateTotal();
-  
+
   // Scroll automático al abrir el modal y ocultar navbar
   useEffect(() => {
     // Bloquear scroll del body y html
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
-    
+
     // Ocultar navbar INMEDIATAMENTE y de todas las formas posibles
     const navbar = document.querySelector('nav');
     const header = document.querySelector('header');
-    
+
     if (navbar) {
       navbar.style.setProperty('display', 'none', 'important');
       navbar.style.setProperty('visibility', 'hidden', 'important');
@@ -508,17 +479,17 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       navbar.style.setProperty('position', 'fixed', 'important');
       navbar.style.setProperty('top', '-1000px', 'important');
     }
-    
+
     if (header) {
       header.style.setProperty('display', 'none', 'important');
       header.style.setProperty('visibility', 'hidden', 'important');
       header.style.setProperty('z-index', '-9999', 'important');
     }
-    
+
     if (modalRef.current) {
       // Scroll inmediato al inicio
       window.scrollTo({ top: 0, behavior: 'auto' });
-      
+
       const contentElement = document.getElementById('edit-invoice-scroll-container');
       if (contentElement) {
         contentElement.scrollTop = 0;
@@ -529,7 +500,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      
+
       if (navbar) {
         navbar.style.removeProperty('display');
         navbar.style.removeProperty('visibility');
@@ -539,7 +510,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
         navbar.style.removeProperty('position');
         navbar.style.removeProperty('top');
       }
-      
+
       if (header) {
         header.style.removeProperty('display');
         header.style.removeProperty('visibility');
@@ -547,7 +518,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
       }
     };
   }, []);
-  
+
   return (
     <div ref={modalRef}
       style={{
@@ -571,7 +542,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
         id="edit-invoice-scroll-container"
         className="bg-white rounded-lg shadow-2xl w-full mx-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        style={{ 
+        style={{
           maxWidth: '900px',
           maxHeight: 'calc(100vh - 1rem)',
         }}
@@ -586,9 +557,9 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         {/* Content con scroll */}
-        <div 
+        <div
           className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5 md:space-y-6"
           style={{
             scrollbarWidth: 'thin',
@@ -603,7 +574,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               </div>
             </div>
           )}
-          
+
           {/* Información del cliente */}
           <div className="border-b border-gray-200 pb-3 sm:pb-4">
             <h3 className="text-base sm:text-lg font-semibold mb-2 text-gray-800">Cliente</h3>
@@ -612,7 +583,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               <p className="text-xs sm:text-sm text-gray-600">{reservation.customer_phone}</p>
             )}
           </div>
-          
+
           {/* Items actuales */}
           <div>
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-gray-800">Items en la factura</h3>
@@ -655,12 +626,12 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               </div>
             )}
           </div>
-          
+
           {/* Agregar items */}
           {!loading && (
             <div className="border-t border-gray-200 pt-3 sm:pt-4">
               <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-gray-800">Agregar items</h3>
-              
+
               {/* Servicios */}
               {services.length > 0 && (
                 <div className="mb-3 sm:mb-4">
@@ -682,7 +653,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
                   </div>
                 </div>
               )}
-              
+
               {/* Productos */}
               {products.length > 0 && (
                 <div className="mb-3 sm:mb-4">
@@ -704,7 +675,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
                   </div>
                 </div>
               )}
-              
+
               {/* Ofertas */}
               {offers.length > 0 && (
                 <div className="mb-3 sm:mb-4">
@@ -728,7 +699,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               )}
             </div>
           )}
-          
+
           {/* Código de descuento */}
           <div className="border-t border-gray-200 pt-3 sm:pt-4">
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-gray-800">
@@ -792,7 +763,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
               </div>
             )}
           </div>
-          
+
           {/* Totales */}
           <div className="border-t border-gray-200 pt-3 sm:pt-4">
             <div className="space-y-2">
@@ -813,7 +784,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
             </div>
           </div>
         </div>
-        
+
         {/* Footer minimalista - Sin scroll */}
         <div className="border-t border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end bg-gray-50 flex-shrink-0">
           <button

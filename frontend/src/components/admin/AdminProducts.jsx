@@ -7,7 +7,8 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, Package, DollarSign, CheckCircle, ShoppingBag, Tag, Image as ImageIcon, ExternalLink } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
-import { API_BASE_URL } from "../../config/api.js";
+import GlassCard from "../ui/GlassCard";
+import { API_BASE_URL, apiRequest } from "../../utils/api.js";
 import { processImageUrl } from "../../utils/imageUrlHelper.js";
 import logo from "../../assets/logo.png";
 
@@ -70,15 +71,7 @@ export default function AdminProducts() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/products?includeInactive=true`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar los productos");
-      }
-
-      const response = await res.json();
+      const response = await apiRequest("/products?includeInactive=true");
       setProducts(response.data || []);
     } catch (err) {
       console.error(err);
@@ -91,14 +84,8 @@ export default function AdminProducts() {
   // Cargar setting de sección habilitada
   const fetchSectionSetting = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/products_section_enabled`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (res.ok) {
-        const response = await res.json();
-        setSectionEnabled(response.data?.value !== false && response.data?.value !== "false");
-      }
+      const response = await apiRequest("/settings/products_section_enabled");
+      setSectionEnabled(response.data?.value !== false && response.data?.value !== "false");
     } catch (err) {
       console.error("[AdminProducts] Error al cargar setting:", err);
       setSectionEnabled(true);
@@ -172,18 +159,10 @@ export default function AdminProducts() {
 
       const newValue = !sectionEnabled;
 
-      const res = await fetch(`${API_BASE_URL}/settings/products_section_enabled`, {
+      await apiRequest("/settings/products_section_enabled", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({ value: newValue }),
       });
-
-      if (!res.ok) {
-        throw new Error("Error al actualizar la configuración");
-      }
 
       setSectionEnabled(newValue);
       setSuccessMessage(newValue ? "Sección de productos activada" : "Sección de productos desactivada");
@@ -310,26 +289,12 @@ export default function AdminProducts() {
         dataToSend.id = formData.id;
       }
 
-      const res = await fetch(url, {
+      const response = await apiRequest(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify(dataToSend),
       });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "Error al guardar producto";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        throw new Error(errorMessage);
-      }
-
-      const response = await res.json();
       const updatedProduct = response.data || response;
 
       // Verificar si el producto se desactivó automáticamente de la página pública
@@ -375,22 +340,7 @@ export default function AdminProducts() {
       setError(null);
       setShowDeleteModal(false);
 
-      const res = await fetch(`${API_BASE_URL}/products/${productToDelete}`, {
-        method: "DELETE",
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "Error al eliminar producto";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        throw new Error(errorMessage);
-      }
+      await apiRequest(`/products/${productToDelete}`, { method: "DELETE" });
 
       await fetchProducts();
 

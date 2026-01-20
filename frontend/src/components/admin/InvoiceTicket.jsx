@@ -8,6 +8,7 @@ import { X } from "lucide-react";
 import { parseDate } from "../../utils/dateUtils.js";
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 
 /**
  * Información de la barbería (puede moverse a settings más adelante)
@@ -71,25 +72,20 @@ export default function InvoiceTicket({ reservation, onClose, refreshKey = 0 }) 
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}/reservations/${reservation.id}/items`, {
-          credentials: "include", // Incluir cookies httpOnly
-        });
+        const response = await apiRequest(`/reservations/${reservation.id}/items`);
+        const items = response.data || [];
+        setInvoiceItems(items);
 
-        if (res.ok) {
-          const response = await res.json();
-          const items = response.data || [];
-          setInvoiceItems(items);
-
-          // Si no hay items guardados, usar el servicio principal
-          if (items.length === 0 && reservation.service_name) {
-            setInvoiceItems([{
-              item_name: reservation.service_name || reservation.service_label || "Servicio",
-              unit_price: reservation.service_price || 0,
-              quantity: 1,
-              subtotal: reservation.service_price || 0,
-            }]);
-          }
+        // Si no hay items guardados, usar el servicio principal
+        if (items.length === 0 && reservation.service_name) {
+          setInvoiceItems([{
+            item_name: reservation.service_name || reservation.service_label || "Servicio",
+            unit_price: reservation.service_price || 0,
+            quantity: 1,
+            subtotal: reservation.service_price || 0,
+          }]);
         }
+
       } catch (err) {
         console.error("Error al cargar items:", err);
         // Si falla, usar el servicio principal

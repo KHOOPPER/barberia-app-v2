@@ -7,6 +7,7 @@ import GlassCard from "../ui/GlassCard";
 import DiscountCodesManager from "./DiscountCodesManager.jsx";
 import VideoConfigCard from "./VideoConfigCard.jsx";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 import logoDefault from "../../assets/logo.png";
 import { processImageUrl } from "../../utils/imageUrlHelper.js";
 
@@ -53,15 +54,12 @@ export default function AdminSettings() {
   useEffect(() => {
     const fetchLogo = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/settings/logo/current`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data?.logo) {
-            const logoUrl = data.data.logo.startsWith('http')
-              ? data.data.logo
-              : `${API_BASE_URL.replace('/api', '')}${data.data.logo}`;
-            setCurrentLogo(logoUrl);
-          }
+        const data = await apiRequest("/settings/logo/current");
+        if (data.data?.logo) {
+          const logoUrl = data.data.logo.startsWith('http')
+            ? data.data.logo
+            : `${API_BASE_URL.replace('/api', '')}${data.data.logo}`;
+          setCurrentLogo(logoUrl);
         }
       } catch (error) {
         console.error("Error al obtener logo:", error);
@@ -77,43 +75,34 @@ export default function AdminSettings() {
       setError(null);
 
       // Obtener fondos actuales y logo en paralelo
-      const [bgRes, adminBgRes, logoRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/settings/background/current`, { credentials: "include" }),
-        fetch(`${API_BASE_URL}/settings/admin-background/current`, { credentials: "include" }),
-        fetch(`${API_BASE_URL}/settings/logo/current`, { credentials: "include" })
+      const [bgData, adminBgData, logoData] = await Promise.all([
+        apiRequest("/settings/background/current").catch(() => ({})),
+        apiRequest("/settings/admin-background/current").catch(() => ({})),
+        apiRequest("/settings/logo/current").catch(() => ({}))
       ]);
 
-      if (bgRes.ok) {
-        const bgData = await bgRes.json();
-        if (bgData.data?.backgroundImage) {
-          setBackgroundImage(bgData.data.backgroundImage);
-          const bgUrl = bgData.data.backgroundImage.startsWith('http')
-            ? bgData.data.backgroundImage
-            : `${API_BASE_URL.replace('/api', '')}${bgData.data.backgroundImage}`;
-          setBackgroundPreview(bgUrl);
-        }
+      if (bgData.data?.backgroundImage) {
+        setBackgroundImage(bgData.data.backgroundImage);
+        const bgUrl = bgData.data.backgroundImage.startsWith('http')
+          ? bgData.data.backgroundImage
+          : `${API_BASE_URL.replace('/api', '')}${bgData.data.backgroundImage}`;
+        setBackgroundPreview(bgUrl);
       }
 
-      if (adminBgRes.ok) {
-        const adminBgData = await adminBgRes.json();
-        if (adminBgData.data?.adminBackgroundImage) {
-          setAdminBackgroundImage(adminBgData.data.adminBackgroundImage);
-          const adminBgUrl = adminBgData.data.adminBackgroundImage.startsWith('http')
-            ? adminBgData.data.adminBackgroundImage
-            : `${API_BASE_URL.replace('/api', '')}${adminBgData.data.adminBackgroundImage}`;
-          setAdminBackgroundPreview(adminBgUrl);
-        }
+      if (adminBgData.data?.adminBackgroundImage) {
+        setAdminBackgroundImage(adminBgData.data.adminBackgroundImage);
+        const adminBgUrl = adminBgData.data.adminBackgroundImage.startsWith('http')
+          ? adminBgData.data.adminBackgroundImage
+          : `${API_BASE_URL.replace('/api', '')}${adminBgData.data.adminBackgroundImage}`;
+        setAdminBackgroundPreview(adminBgUrl);
       }
 
-      if (logoRes.ok) {
-        const logoData = await logoRes.json();
-        if (logoData.data?.logo) {
-          setLogo(logoData.data.logo);
-          const logoUrl = logoData.data.logo.startsWith('http')
-            ? logoData.data.logo
-            : `${API_BASE_URL.replace('/api', '')}${logoData.data.logo}`;
-          setLogoPreview(logoUrl);
-        }
+      if (logoData.data?.logo) {
+        setLogo(logoData.data.logo);
+        const logoUrl = logoData.data.logo.startsWith('http')
+          ? logoData.data.logo
+          : `${API_BASE_URL.replace('/api', '')}${logoData.data.logo}`;
+        setLogoPreview(logoUrl);
       }
     } catch (err) {
       console.error(err);
@@ -142,14 +131,11 @@ export default function AdminSettings() {
   useEffect(() => {
     const fetchVideoConfig = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/settings/homepage-video-config`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data) {
-            setVideoType(data.data.type || 'default');
-            setVideoUrl(data.data.url || '');
-            setHeroImages(data.data.images || []);
-          }
+        const data = await apiRequest("/settings/homepage-video-config");
+        if (data.data) {
+          setVideoType(data.data.type || 'default');
+          setVideoUrl(data.data.url || '');
+          setHeroImages(data.data.images || []);
         }
       } catch (error) {
         console.error("Error al obtener configuración de video:", error);
@@ -216,20 +202,10 @@ export default function AdminSettings() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/settings/upload-background`, {
+      const responseData = await apiRequest("/settings/upload-background", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ imageUrl: processedUrl }),
       });
-
-      const responseData = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(responseData.error?.message || `Error ${res.status}: ${res.statusText}`);
-      }
 
       if (!responseData.success) {
         throw new Error(responseData.error?.message || "Error al subir la imagen de fondo");
@@ -273,20 +249,10 @@ export default function AdminSettings() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/settings/upload-admin-background`, {
+      const responseData = await apiRequest("/settings/upload-admin-background", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ imageUrl: processedUrl }),
       });
-
-      const responseData = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(responseData.error?.message || `Error ${res.status}: ${res.statusText}`);
-      }
 
       if (!responseData.success) {
         throw new Error(responseData.error?.message || "Error al subir la imagen de fondo");
@@ -330,20 +296,10 @@ export default function AdminSettings() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/settings/upload-logo`, {
+      const responseData = await apiRequest("/settings/upload-logo", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ imageUrl: processedUrl }),
       });
-
-      const responseData = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(responseData.error?.message || `Error ${res.status}: ${res.statusText}`);
-      }
 
       if (!responseData.success) {
         throw new Error(responseData.error?.message || "Error al subir el logo");

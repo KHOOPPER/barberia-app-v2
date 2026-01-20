@@ -5,7 +5,8 @@
 
 import { useState, useEffect } from "react";
 import { Bell, Save, Mail, MessageSquare, Clock } from "lucide-react";
-import { API_BASE_URL } from "../../config/api.js";
+import { Bell, Save, Mail, MessageSquare, Clock } from "lucide-react";
+import { apiRequest } from "../../utils/api.js";
 
 export default function NotificationsManager() {
   const [settings, setSettings] = useState({
@@ -26,14 +27,9 @@ export default function NotificationsManager() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/notifications`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data) {
-          setSettings({ ...settings, ...data.data });
-        }
+      const data = await apiRequest("/settings/notifications");
+      if (data.data) {
+        setSettings({ ...settings, ...data.data });
       }
     } catch (err) {
       console.error("Error al cargar configuración:", err);
@@ -46,16 +42,10 @@ export default function NotificationsManager() {
       setError(null);
       setSuccess(false);
 
-      const res = await fetch(`${API_BASE_URL}/settings/notifications`, {
+      await apiRequest("/settings/notifications", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify(settings),
       });
-
-      if (!res.ok) {
-        throw new Error("Error al guardar configuración");
-      }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

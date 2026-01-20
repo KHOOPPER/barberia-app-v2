@@ -3,6 +3,7 @@ import { Image as ImageIcon, Upload, X, Trash2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { API_BASE_URL } from '../../config/api';
+import { apiRequest } from '../../utils/api';
 
 export default function VideoConfigCard({ videoType, videoUrl, heroImages = [], onUpdate }) {
     const [showModal, setShowModal] = useState(false);
@@ -54,16 +55,10 @@ export default function VideoConfigCard({ videoType, videoUrl, heroImages = [], 
                 formData.append('images', file);
             });
 
-            const res = await fetch(`${API_BASE_URL}/settings/homepage-hero-images`, {
+            await apiRequest('/settings/homepage-hero-images', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include',
             });
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error?.message || `Error ${res.status}`);
-            }
 
             setUploadProgress(100);
 

@@ -30,7 +30,7 @@ import GlassCard from "../ui/GlassCard";
 import CustomSelect from "../ui/CustomSelect";
 import DatePicker from "../ui/DatePicker";
 import { API_BASE_URL } from "../../config/api"; // ← ahora viene de una config central
-import { isAuthenticated } from "../../utils/api.js";
+import { isAuthenticated, apiRequest } from "../../utils/api.js";
 import { parseDate } from "../../utils/dateUtils.js";
 import { exportReservations, exportReservationsToPDF } from "../../utils/exportUtils.js";
 import logo from "../../assets/logo.png";
@@ -764,19 +764,11 @@ export default function AdminReservations() {
       if (status) params.append("status", status);
 
       const queryString = params.toString();
-      const url = queryString
-        ? `${API_BASE_URL}/reservations/admin?${queryString}`
-        : `${API_BASE_URL}/reservations/admin`;
+      const endpoint = queryString
+        ? `/reservations/admin?${queryString}`
+        : `/reservations/admin`;
 
-      const res = await fetch(url, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "No se pudieron cargar las reservas");
-      }
-
-      const response = await res.json();
+      const response = await apiRequest(endpoint);
       // El backend devuelve { success: true, data: [...] }
       const reservationsData = response.data || response;
 
@@ -805,11 +797,8 @@ export default function AdminReservations() {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/barbers?includeInactive=true`);
-        if (res.ok) {
-          const data = await res.json();
-          setBarbers(Array.isArray(data.data) ? data.data : []);
-        }
+        const data = await apiRequest("/barbers?includeInactive=true");
+        setBarbers(Array.isArray(data.data) ? data.data : []);
       } catch (err) {
         // Error al cargar barberos (no crítico)
       }
@@ -844,27 +833,12 @@ export default function AdminReservations() {
    */
   const handleStatusChange = async (id, status) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/reservations/${id}/status`, {
+      const result = await apiRequest(`/reservations/${id}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({ status }),
       });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "No se pudo actualizar el estado";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        alert(errorMessage);
-        return;
-      }
-
-      const result = await res.json();
+      // Actualizar el estado local con la reserva devuelta por el backend
 
       // Actualizar el estado local con la reserva devuelta por el backend
       setReservations((prev) =>
@@ -880,26 +854,12 @@ export default function AdminReservations() {
    * He implementado esta función con confirmación implícita para evitar eliminaciones accidentales
    */
   const handleDeleteReservation = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar esta reserva?")) return;
+
     try {
-      const res = await fetch(`${API_BASE_URL}/reservations/${id}`, {
+      await apiRequest(`/reservations/${id}`, {
         method: "DELETE",
-        credentials: "include", // Incluir cookies httpOnly
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "No se pudo eliminar la reserva";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        alert(errorMessage);
-        return;
-      }
-
-      await res.json();
 
       setReservations((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {

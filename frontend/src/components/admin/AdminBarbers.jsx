@@ -2,7 +2,9 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, UserCircle, Users, Award, CheckCircle, DollarSign, Calendar, TrendingUp } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
+import GlassCard from "../ui/GlassCard";
 import { API_BASE_URL } from "../../config/api.js";
+import { apiRequest } from "../../utils/api.js";
 import logo from "../../assets/logo.png";
 
 export default function AdminBarbers() {
@@ -60,15 +62,7 @@ export default function AdminBarbers() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/barbers?includeInactive=true`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar los barberos");
-      }
-
-      const response = await res.json();
+      const response = await apiRequest("/barbers?includeInactive=true");
       setBarbers(response.data || []);
     } catch (err) {
       console.error(err);
@@ -117,12 +111,8 @@ export default function AdminBarbers() {
   // Función auxiliar para calcular el total de una reserva
   const calculateReservationTotal = async (reservation) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/reservations/${reservation.id}/items`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (res.ok) {
-        const response = await res.json();
+      try {
+        const response = await apiRequest(`/reservations/${reservation.id}/items`);
         const items = response.data || [];
 
         if (items.length > 0) {
@@ -141,6 +131,8 @@ export default function AdminBarbers() {
           // Total final = subtotal - descuentos
           return Math.max(0, subtotal - totalDiscount);
         }
+      } catch (err) {
+        // Fallback below
       }
 
       // Si no hay items o falla, usar precio del servicio original como fallback
@@ -171,68 +163,64 @@ export default function AdminBarbers() {
       endDate.setHours(23, 59, 59, 999);
 
       // Obtener reservas sin filtro de fecha
-      const res = await fetch(`${API_BASE_URL}/reservations/admin`, {
-        credentials: "include", // Incluir cookies httpOnly
+      const response = await apiRequest("/reservations/admin");
+      let reservations = response.data || [];
+
+      // Filtrar reservas desde el 1 de enero hasta el último día del mes actual y excluir facturas de solo productos
+      reservations = reservations.filter(reservation => {
+        // Excluir reservas sin fecha
+        if (!reservation.date) return false;
+
+        // Excluir facturas de solo productos (no tienen barbero asignado)
+        if (reservation.service_label === "Factura - Solo Productos") return false;
+
+        // Filtrar por fecha (desde el 1 de enero hasta el último día del mes actual)
+        const reservationDate = new Date(reservation.date);
+        return reservationDate >= startDate && reservationDate <= endDate;
       });
 
-      if (res.ok) {
-        const response = await res.json();
-        let reservations = response.data || [];
+      // Calcular estadísticas por barbero
+      const stats = {};
 
-        // Filtrar reservas desde el 1 de enero hasta el último día del mes actual y excluir facturas de solo productos
-        reservations = reservations.filter(reservation => {
-          // Excluir reservas sin fecha
-          if (!reservation.date) return false;
+      // Procesar todas las reservas en paralelo para calcular sus totales
+      const reservationsWithTotals = await Promise.all(
+        reservations.map(async (reservation) => {
+          const total = await calculateReservationTotal(reservation);
+          return { ...reservation, calculatedTotal: total };
+        })
+      );
 
-          // Excluir facturas de solo productos (no tienen barbero asignado)
-          if (reservation.service_label === "Factura - Solo Productos") return false;
+      reservationsWithTotals.forEach(reservation => {
+        const barberId = reservation.barber_id;
 
-          // Filtrar por fecha (desde el 1 de enero hasta el último día del mes actual)
-          const reservationDate = new Date(reservation.date);
-          return reservationDate >= startDate && reservationDate <= endDate;
-        });
+        // Solo contar reservas con barbero asignado
+        if (!barberId) return;
 
-        // Calcular estadísticas por barbero
-        const stats = {};
+        const barberName = reservation.barber_name || reservation.barber?.name || 'Sin asignar';
 
-        // Procesar todas las reservas en paralelo para calcular sus totales
-        const reservationsWithTotals = await Promise.all(
-          reservations.map(async (reservation) => {
-            const total = await calculateReservationTotal(reservation);
-            return { ...reservation, calculatedTotal: total };
-          })
-        );
+        if (!stats[barberId]) {
+          stats[barberId] = {
+            name: barberName,
+            totalReservations: 0,
+            confirmedReservations: 0,
+            revenue: 0,
+          };
+        }
 
-        reservationsWithTotals.forEach(reservation => {
-          const barberId = reservation.barber_id;
+        // Contar todas las reservas del barbero
+        stats[barberId].totalReservations++;
 
-          // Solo contar reservas con barbero asignado
-          if (!barberId) return;
+        // Solo contar ingresos de reservas confirmadas
+        if (reservation.status === 'confirmada') {
+          stats[barberId].confirmedReservations++;
+          const revenue = parseFloat(reservation.calculatedTotal) || 0;
+          stats[barberId].revenue += revenue;
+        }
+      });
 
-          const barberName = reservation.barber_name || reservation.barber?.name || 'Sin asignar';
 
-          if (!stats[barberId]) {
-            stats[barberId] = {
-              name: barberName,
-              totalReservations: 0,
-              confirmedReservations: 0,
-              revenue: 0,
-            };
-          }
 
-          // Contar todas las reservas del barbero
-          stats[barberId].totalReservations++;
-
-          // Solo contar ingresos de reservas confirmadas
-          if (reservation.status === 'confirmada') {
-            stats[barberId].confirmedReservations++;
-            const revenue = parseFloat(reservation.calculatedTotal) || 0;
-            stats[barberId].revenue += revenue;
-          }
-        });
-
-        setBarberStats(stats);
-      }
+      setBarberStats(stats);
     } catch (err) {
       console.error("Error al cargar estadísticas:", err);
       setBarberStats({});
@@ -352,9 +340,9 @@ export default function AdminBarbers() {
       setLoading(true);
       setError(null);
 
-      const url = editingId
-        ? `${API_BASE_URL}/barbers/${editingId}`
-        : `${API_BASE_URL}/barbers`;
+      const endpoint = editingId
+        ? `/barbers/${editingId}`
+        : `/barbers`;
 
       const method = editingId ? "PUT" : "POST";
 
@@ -370,17 +358,10 @@ export default function AdminBarbers() {
         dataToSend.id = formData.id;
       }
 
-      const res = await fetch(url, {
+      await apiRequest(endpoint, {
         method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(dataToSend),
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al guardar barbero");
-      }
 
       await fetchBarbers();
       await fetchBarberStats();
@@ -409,14 +390,9 @@ export default function AdminBarbers() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/barbers/${barberToDelete}`, {
+      await apiRequest(`/barbers/${barberToDelete}`, {
         method: "DELETE",
-        credentials: "include",
       });
-
-      if (!res.ok) {
-        throw new Error("Error al eliminar barbero");
-      }
 
       await fetchBarbers();
       await fetchBarberStats();

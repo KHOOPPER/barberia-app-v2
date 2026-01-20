@@ -8,7 +8,9 @@ import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, Tag, Percent, DollarSign, Calendar, CheckCircle } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
 import DatePicker from "../ui/DatePicker";
-import { API_BASE_URL } from "../../config/api.js";
+import GlassCard from "../ui/GlassCard";
+import DatePicker from "../ui/DatePicker";
+import { API_BASE_URL, apiRequest } from "../../utils/api.js";
 import { processImageUrl } from "../../utils/imageUrlHelper.js";
 import logo from "../../assets/logo.png";
 
@@ -71,15 +73,7 @@ export default function AdminOffers() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE_URL}/offers?includeInactive=true`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        throw new Error("No se pudieron cargar las ofertas");
-      }
-
-      const response = await res.json();
+      const response = await apiRequest("/offers?includeInactive=true");
       setOffers(response.data || []);
     } catch (err) {
       console.error(err);
@@ -92,14 +86,8 @@ export default function AdminOffers() {
   // Cargar setting de sección habilitada
   const fetchSectionSetting = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/offers_section_enabled`, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (res.ok) {
-        const response = await res.json();
-        setSectionEnabled(response.data?.value !== false && response.data?.value !== "false");
-      }
+      const response = await apiRequest("/settings/offers_section_enabled");
+      setSectionEnabled(response.data?.value !== false && response.data?.value !== "false");
     } catch (err) {
       console.error("[AdminOffers] Error al cargar setting:", err);
       // Por defecto habilitado
@@ -120,18 +108,10 @@ export default function AdminOffers() {
 
       const newValue = !sectionEnabled;
 
-      const res = await fetch(`${API_BASE_URL}/settings/offers_section_enabled`, {
+      await apiRequest("/settings/offers_section_enabled", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({ value: newValue }),
       });
-
-      if (!res.ok) {
-        throw new Error("Error al actualizar la configuración");
-      }
 
       setSectionEnabled(newValue);
       setSuccessMessage(newValue ? "Sección de ofertas activada" : "Sección de ofertas desactivada");
@@ -221,11 +201,7 @@ export default function AdminOffers() {
 
       const imageUrl = formData.image_url;
 
-      const url = editingId
-        ? `${API_BASE_URL}/offers/${editingId}`
-        : `${API_BASE_URL}/offers`;
 
-      const method = editingId ? "PUT" : "POST";
 
       // Formatear fechas correctamente (YYYY-MM-DD)
       const formatDate = (dateString) => {
@@ -271,26 +247,13 @@ export default function AdminOffers() {
         dataToSend.id = formData.id;
       }
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Incluir cookies httpOnly
-        body: JSON.stringify(dataToSend),
-      });
+      const endpoint = editingId ? `/offers/${editingId}` : "/offers";
+      const method = editingId ? "PUT" : "POST";
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "Error al guardar oferta";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        throw new Error(errorMessage);
-      }
+      await apiRequest(endpoint, {
+        method,
+        body: JSON.stringify(dataToSend)
+      });
 
       await fetchOffers();
       resetForm();
@@ -319,22 +282,7 @@ export default function AdminOffers() {
       setError(null);
       setShowDeleteModal(false);
 
-      const res = await fetch(`${API_BASE_URL}/offers/${offerToDelete}`, {
-        method: "DELETE",
-        credentials: "include", // Incluir cookies httpOnly
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMessage = "Error al eliminar oferta";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto tal cual
-        }
-        throw new Error(errorMessage);
-      }
+      await apiRequest(`/offers/${offerToDelete}`, { method: "DELETE" });
 
       await fetchOffers();
       setSuccessMessage("Oferta eliminada correctamente");

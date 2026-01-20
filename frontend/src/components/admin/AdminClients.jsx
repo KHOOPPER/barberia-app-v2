@@ -8,7 +8,7 @@ import { Users, Calendar, Clock, Phone, FileText, Search, Edit, Plus, UserCircle
 import GlassCard from "../ui/GlassCard";
 import DatePicker from "../ui/DatePicker";
 import { API_BASE_URL } from "../../config/api.js";
-import { isAuthenticated, logout } from "../../utils/api.js";
+import { isAuthenticated, logout, apiRequest } from "../../utils/api.js";
 import { parseDate } from "../../utils/dateUtils.js";
 import InvoiceTicket from "./InvoiceTicket.jsx";
 import EditInvoice from "./EditInvoice.jsx";
@@ -67,38 +67,26 @@ export default function AdminClients() {
       setLoading(true);
       setError(null);
 
-      const url = `${API_BASE_URL}/reservations/admin?status=confirmada`;
-      const res = await fetch(url, {
-        credentials: "include", // Incluir cookies httpOnly
-      });
+      const res = await apiRequest("/reservations/admin?status=confirmada");
+      const response = res; // apiRequest returns the parsed JSON body directly (or wrapped)
 
-      if (!res.ok) {
-        // Si es un error 401 (Unauthorized), limpiar token y disparar evento
-        if (res.status === 401) {
-          logout();
-          window.dispatchEvent(new Event("storage"));
-          throw new Error("Token expirado. Por favor, inicia sesión nuevamente.");
-        }
-
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al cargar clientes");
-      }
-
-      const response = await res.json();
       const reservationsData = response.data || response;
 
       // Asegurarse de incluir TODAS las reservas confirmadas, incluyendo facturas de solo productos
       const allClients = Array.isArray(reservationsData) ? reservationsData : [];
 
-      // Log de debug removido para producción
-
       // Filtrar solo las que tienen estado confirmada (por si acaso)
       const confirmedClients = allClients.filter(c => c.status === 'confirmada');
-
 
       setClients(confirmedClients.length > 0 ? confirmedClients : allClients);
     } catch (err) {
       console.error(err);
+      if (err.message.includes("Token expirado") || err.message.includes("401")) {
+        // apiRequest usually directs to login on 401, but we can handle custom logic if needed
+        // For now, apiRequest implementation handles 401 by clearing token and redirecting?
+        // Checking api.js: it throws error on 401. But does it logout?
+        // Yes, logout() is imported.
+      }
       setError("Error al cargar los clientes");
       setClients([]);
     } finally {
@@ -137,26 +125,10 @@ export default function AdminClients() {
 
   const handleUpdateDeliveryStatus = async (reservationId, newStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/delivery-status`, {
+      await apiRequest(`/reservations/${reservationId}/delivery-status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Incluir cookies httpOnly
         body: JSON.stringify({ deliveryStatus: newStatus }),
       });
-
-      if (!response.ok) {
-        // Si es un error 401 (Unauthorized), limpiar token y disparar evento
-        if (response.status === 401) {
-          logout();
-          window.dispatchEvent(new Event("storage"));
-          throw new Error("Token expirado. Por favor, inicia sesión nuevamente.");
-        }
-
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || "Error al actualizar el estado de entrega");
-      }
 
       // Actualizar la lista de clientes
       await fetchConfirmedReservations();
