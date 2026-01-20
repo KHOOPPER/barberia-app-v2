@@ -8,8 +8,7 @@ import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, Tag, Percent, DollarSign, Calendar, CheckCircle } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
 import DatePicker from "../ui/DatePicker";
-import GlassCard from "../ui/GlassCard";
-import DatePicker from "../ui/DatePicker";
+
 import { API_BASE_URL, apiRequest } from "../../utils/api.js";
 import { processImageUrl } from "../../utils/imageUrlHelper.js";
 import logo from "../../assets/logo.png";

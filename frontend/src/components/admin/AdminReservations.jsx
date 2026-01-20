@@ -732,7 +732,7 @@ export default function AdminReservations() {
         if (mounted && logoUrl) {
           setCurrentLogo(logoUrl);
         }
-      } catch (error) {
+      } catch {
         // Fallback al logo por defecto si falla la carga
       }
     };
@@ -782,7 +782,7 @@ export default function AdminReservations() {
         : [];
 
       setReservations(filteredReservations);
-    } catch (err) {
+    } catch {
       setError("Error al cargar reservas");
       setReservations([]);
     } finally {

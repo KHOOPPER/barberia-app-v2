@@ -7,7 +7,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, Package, DollarSign, CheckCircle, ShoppingBag, Tag, Image as ImageIcon, ExternalLink } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
-import GlassCard from "../ui/GlassCard";
+
 import { API_BASE_URL, apiRequest } from "../../utils/api.js";
 import { processImageUrl } from "../../utils/imageUrlHelper.js";
 import logo from "../../assets/logo.png";
@@ -267,9 +267,9 @@ export default function AdminProducts() {
 
       const imageUrl = formData.image_url;
 
-      const url = editingId
-        ? `${API_BASE_URL}/products/${editingId}`
-        : `${API_BASE_URL}/products`;
+      const endpoint = editingId
+        ? `/products/${editingId}`
+        : `/products`;
 
       const method = editingId ? "PUT" : "POST";
 

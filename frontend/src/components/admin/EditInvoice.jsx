@@ -352,7 +352,7 @@ export default function EditInvoice({ reservation, onClose, onSave }) {
   /**
    * Guarda los cambios en el backend (función reutilizable)
    */
-  const saveChanges = async (showSuccessMessage = false) => {
+  const saveChanges = async () => {
     if (invoiceItems.length === 0) {
       throw new Error("Debe haber al menos un item en la factura");
     }

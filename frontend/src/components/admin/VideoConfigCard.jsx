@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Image as ImageIcon, Upload, X, Plus } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { API_BASE_URL } from '../../config/api';
 import { apiRequest } from '../../utils/api';
 
-export default function VideoConfigCard({ videoType, videoUrl, heroImages = [], onUpdate }) {
+export default function VideoConfigCard({ heroImages = [] }) {
     const [showModal, setShowModal] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);

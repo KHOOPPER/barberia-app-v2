@@ -1,8 +1,8 @@
 
 import { useEffect, useState, useCallback } from "react";
-import { Upload, Image as ImageIcon, Tag, X, Edit } from "lucide-react";
+import { Upload, Image as ImageIcon, Tag, X, Edit, Settings2 } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+
 import GlassCard from "../ui/GlassCard";
 import DiscountCodesManager from "./DiscountCodesManager.jsx";
 import VideoConfigCard from "./VideoConfigCard.jsx";
@@ -31,23 +31,23 @@ export default function AdminSettings() {
   const [selectedAdminBackgroundFile, setSelectedAdminBackgroundFile] = useState(null);
   const [uploadingAdminBackground, setUploadingAdminBackground] = useState(false);
 
+  const [currentLogo, setCurrentLogo] = useState(logoDefault);
+
+  // Estados para configuración multi-fuente de video
+
+  // eslint-disable-next-line no-unused-vars
   const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [selectedLogoFile, setSelectedLogoFile] = useState(null);
-  const [currentLogo, setCurrentLogo] = useState(logoDefault);
-
-  // Estados para modal de conversión
-  const [showConversionModal, setShowConversionModal] = useState(false);
-  const [conversionMessage, setConversionMessage] = useState('');
-  const [conversionSuccess, setConversionSuccess] = useState(false);
 
   // Estados para configuración multi-fuente de video
   const [showVideoModal, setShowVideoModal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [videoType, setVideoType] = useState('default'); // default, upload, youtube, drive
+  // eslint-disable-next-line no-unused-vars
   const [videoUrl, setVideoUrl] = useState('');
   const [heroImages, setHeroImages] = useState([]);
-  const [videoFile, setVideoFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
   const [updatingVideo, setUpdatingVideo] = useState(false);
 
   // Cargar logo desde settings
@@ -266,18 +266,45 @@ export default function AdminSettings() {
 
       setSelectedAdminBackgroundFile(null);
 
-      // Guardar mensaje en localStorage antes del reload
-      localStorage.setItem('settings_success_message', 'Imagen de fondo del panel administrativo actualizada correctamente');
-
-      // Recargar la página inmediatamente para aplicar el nuevo fondo
+      localStorage.setItem('settings_success_message', 'Imagen de fondo del panel admin actualizada correctamente');
       window.location.reload();
     } catch (err) {
-      console.error("Error al subir imagen de fondo del admin:", err);
+      console.error("Error completo:", err);
       setError(err.message || "Error al subir la imagen de fondo");
     } finally {
       setUploadingAdminBackground(false);
     }
   }, [selectedAdminBackgroundFile]);
+
+  const handleUpdateVideo = async () => {
+    try {
+      setUpdatingVideo(true);
+      await apiRequest('/settings/homepage-video-config', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'youtube',
+          url: videoUrlInput,
+          images: heroImages // Preserve existing images if any
+        })
+      });
+      setSuccessMessage('Video actualizado correctamente');
+      setShowSuccessModal(true);
+      setShowVideoModal(false);
+      // Refresh config
+      const data = await apiRequest("/settings/homepage-video-config");
+      if (data.data) {
+        setVideoType(data.data.type || 'default');
+        setVideoUrl(data.data.url || '');
+        setHeroImages(data.data.images || []);
+      }
+    } catch (error) {
+      console.error('Error updating video:', error);
+      setError('Error al actualizar el video');
+    } finally {
+      setUpdatingVideo(false);
+    }
+  };
+
 
   const handleUploadLogo = useCallback(async () => {
     if (!selectedLogoFile) {
@@ -570,8 +597,6 @@ export default function AdminSettings() {
           {/* Video de Fondo - Multi-fuente */}
           <GlassCard>
             <VideoConfigCard
-              videoType={videoType}
-              videoUrl={videoUrl}
               heroImages={heroImages}
               onUpdate={() => window.location.reload()}
             />
@@ -957,48 +982,7 @@ export default function AdminSettings() {
         )}
 
         {/* Modal de conversión de Google Drive */}
-        {showConversionModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" style={{ alignItems: 'flex-start', paddingTop: '15vh' }}>
-            <div
-              className="w-full max-w-md border border-white/20 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.65)] text-neutral-50 p-6"
-              style={{
-                background: 'linear-gradient(135deg, rgba(156, 163, 175, 0.08) 0%, rgba(156, 163, 175, 0.02) 50%, rgba(0, 0, 0, 0.4) 100%)',
-                backdropFilter: 'blur(40px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                borderRadius: '40px',
-              }}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.20em] text-gray-400">
-                    {conversionSuccess ? 'Éxito' : 'Aviso'}
-                  </p>
-                  <p className="text-sm font-medium text-white mt-1">
-                    {conversionMessage}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowConversionModal(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
-                >
-                  <X className="h-4 w-4 text-white/80" />
-                </button>
-              </div>
-              <div className="text-center mt-4">
-                <button
-                  onClick={() => setShowConversionModal(false)}
-                  className="px-6 py-2 text-sm font-semibold text-white transition-all duration-200 ease-out border border-blue-400/30 shadow-lg shadow-blue-400/20 hover:shadow-xl hover:shadow-blue-400/30 active:scale-95"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(96, 165, 250, 0.7) 0%, rgba(59, 130, 246, 0.8) 100%)',
-                    borderRadius: '16px',
-                  }}
-                >
-                  Aceptar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

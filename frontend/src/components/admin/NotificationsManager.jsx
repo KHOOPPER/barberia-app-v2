@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { Bell, Save, Mail, MessageSquare, Clock } from "lucide-react";
-import { Bell, Save, Mail, MessageSquare, Clock } from "lucide-react";
+
 import { apiRequest } from "../../utils/api.js";
 
 export default function NotificationsManager() {

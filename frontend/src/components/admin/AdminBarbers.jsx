@@ -28,6 +28,7 @@ export default function AdminBarbers() {
   });
   const [currentLogo, setCurrentLogo] = useState(logo);
   const [barberStats, setBarberStats] = useState({});
+  // eslint-disable-next-line no-unused-vars
   const [loadingStats, setLoadingStats] = useState(false);
 
   // Referencia al container principal para hacer scroll
