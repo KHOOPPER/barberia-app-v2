@@ -29,7 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../ui/GlassCard";
 import CustomSelect from "../ui/CustomSelect";
 import DatePicker from "../ui/DatePicker";
-import { API_BASE_URL } from "../../config/api"; // ← ahora viene de una config central
+import { API_BASE_URL } from "../../config/api.js"; // ← ahora viene de una config central
 import { isAuthenticated, apiRequest } from "../../utils/api.js";
 import { parseDate } from "../../utils/dateUtils.js";
 import { exportReservations, exportReservationsToPDF } from "../../utils/exportUtils.js";
@@ -659,7 +659,7 @@ export default function AdminReservations() {
   const [barbers, setBarbers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
+
 
   /**
    * Estados para filtros de búsqueda
@@ -1723,21 +1723,30 @@ export default function AdminReservations() {
               {/* Acciones de estado - Slate Gradient Style */}
               <div className="space-y-3 mb-6">
                 <button
-                  onClick={() => handleUpdateStatus('pendiente')}
+                  onClick={() => {
+                    handleStatusChange(selectedReservation.id, 'pendiente');
+                    setOpenActionsId(null);
+                  }}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-700/40 text-sm font-medium text-white shadow-lg shadow-slate-800/30 hover:shadow-xl hover:shadow-slate-700/40 transition-all duration-200 active:scale-[0.98]"
                   style={{ background: 'linear-gradient(135deg, rgba(51, 65, 85, 0.7) 0%, rgba(30, 41, 59, 0.8) 100%)' }}
                 >
                   Marcar como pendiente
                 </button>
                 <button
-                  onClick={() => handleUpdateStatus('confirmada')}
+                  onClick={() => {
+                    handleStatusChange(selectedReservation.id, 'confirmada');
+                    setOpenActionsId(null);
+                  }}
                   className="w-full px-4 py-2.5 rounded-xl border border-blue-500/40 text-sm font-medium text-white shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 active:scale-[0.98]"
                   style={{ background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.8) 0%, rgba(0, 122, 255, 1) 100%)' }}
                 >
                   Confirmar reserva
                 </button>
                 <button
-                  onClick={() => handleUpdateStatus('cancelada')}
+                  onClick={() => {
+                    handleStatusChange(selectedReservation.id, 'cancelada');
+                    setOpenActionsId(null);
+                  }}
                   className="w-full px-4 py-2.5 rounded-xl border border-red-500/40 text-sm font-medium text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-200 active:scale-[0.98]"
                   style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.7) 0%, rgba(185, 28, 28, 0.8) 100%)' }}
                 >
@@ -1750,7 +1759,10 @@ export default function AdminReservations() {
               <div className="text-center">
                 <p className="text-[10px] text-white/40 mb-3 uppercase tracking-widest font-medium">Zona de peligro</p>
                 <button
-                  onClick={handleDeleteFromModal}
+                  onClick={() => {
+                    handleDeleteReservation(selectedReservation.id);
+                    setOpenActionsId(null);
+                  }}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-700/40 text-sm font-bold text-white shadow-lg shadow-slate-800/30 hover:shadow-xl hover:shadow-slate-700/40 transition-all duration-200 ease-out active:scale-[0.98]"
                   style={{
                     background: 'linear-gradient(135deg, rgba(51, 65, 85, 0.9) 0%, rgba(30, 41, 59, 1) 100%)',

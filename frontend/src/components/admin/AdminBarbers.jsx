@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Edit2, Trash2, X, Save, UserCircle, Users, Award, CheckCircle, DollarSign, Calendar, TrendingUp } from "lucide-react";
 import GlassCard from "../ui/GlassCard";
-import GlassCard from "../ui/GlassCard";
+
 import { API_BASE_URL } from "../../config/api.js";
 import { apiRequest } from "../../utils/api.js";
 import logo from "../../assets/logo.png";
