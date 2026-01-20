@@ -186,7 +186,7 @@ export const validateCreateReservationsFromCart = [
     .withMessage("cartItems debe ser un array con al menos un elemento"),
 
   body("discountCodeId")
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage("discountCodeId debe ser un número entero positivo"),
 ];
