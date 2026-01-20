@@ -19,14 +19,14 @@ const isLocalNetworkIP = (url) => {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
-    
+
     // Verificar si es una IP de red local
     const localNetworkPatterns = [
       /^192\.168\.\d{1,3}\.\d{1,3}$/,  // 192.168.x.x
       /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,  // 10.x.x.x
       /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,  // 172.16-31.x.x
     ];
-    
+
     return localNetworkPatterns.some(pattern => pattern.test(hostname));
   } catch {
     return false;
@@ -49,9 +49,9 @@ const getAllowedOrigins = () => {
  */
 const isOriginAllowed = (origin) => {
   if (!origin) return false;
-  
+
   let allowedOrigins = getAllowedOrigins();
-  
+
   // En desarrollo, agregar variantes comunes de localhost si no están en la lista
   if (process.env.NODE_ENV !== "production") {
     const localhostVariants = [
@@ -65,15 +65,16 @@ const isOriginAllowed = (origin) => {
         allowedOrigins.push(variant);
       }
     });
-    
+
     // En desarrollo, permitir IPs de red local (para acceso desde otros dispositivos)
     if (isLocalNetworkIP(origin)) {
       return true;
     }
   }
-  
+
   // Verificar si el origen está en la lista blanca explícita
-  return allowedOrigins.includes(origin);
+  // Verificar si el origen está en la lista blanca explícita o es un subdominio de vercel.app
+  return allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin);
 };
 
 /**
@@ -87,17 +88,17 @@ export const csrfProtection = (req, res, next) => {
   if (!modifyingMethods.includes(req.method)) {
     return next();
   }
-  
+
   // Obtener Origin y Referer
   const origin = req.get("origin");
   const referer = req.get("referer");
-  
+
   // Validar Origin (preferido, más confiable)
   if (origin) {
     if (isOriginAllowed(origin)) {
       return next();
     }
-    
+
     // Si Origin no está permitido, registrar y rechazar
     logger.warn("CSRF protection: Origin no permitido", {
       origin,
@@ -105,16 +106,16 @@ export const csrfProtection = (req, res, next) => {
       method: req.method,
       ip: req.ip,
     });
-    
+
     return next(new ForbiddenError("Origen no permitido"));
   }
-  
+
   // Si no hay Origin, validar Referer (menos confiable pero mejor que nada)
   if (referer) {
     try {
       const refererUrl = new URL(referer);
       const refererOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
-      
+
       if (isOriginAllowed(refererOrigin)) {
         return next();
       }
@@ -122,7 +123,7 @@ export const csrfProtection = (req, res, next) => {
       // Si no se puede parsear el Referer, continuar con validación estricta
     }
   }
-  
+
   // Si no hay Origin ni Referer válido, rechazar en producción
   // En desarrollo, ser más permisivo para herramientas como Postman
   if (process.env.NODE_ENV === "production") {
@@ -131,10 +132,10 @@ export const csrfProtection = (req, res, next) => {
       method: req.method,
       ip: req.ip,
     });
-    
+
     return next(new ForbiddenError("Origen de la petición no válido"));
   }
-  
+
   // En desarrollo, permitir si no hay Origin/Referer (para herramientas de desarrollo)
   next();
 };
