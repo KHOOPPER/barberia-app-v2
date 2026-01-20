@@ -459,8 +459,10 @@ export const updateHomepageVideo = async (req, res, next) => {
   try {
     const { videoUrl } = req.body;
 
+    console.log('📝 Actualizando video, datos recibidos:', { videoUrl, body: req.body });
 
     if (!videoUrl || !videoUrl.trim()) {
+      console.log('❌ Validación falló: URL vacía o solo espacios');
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
@@ -470,9 +472,11 @@ export const updateHomepageVideo = async (req, res, next) => {
     }
 
     const trimmedUrl = videoUrl.trim();
+    console.log('🔍 URL después de trim:', trimmedUrl);
 
     // Validar que sea una URL de YouTube válida
     if (!isValidYouTubeUrl(trimmedUrl)) {
+      console.log('❌ Validación falló: URL no es de YouTube válida');
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         error: {
@@ -481,16 +485,18 @@ export const updateHomepageVideo = async (req, res, next) => {
       });
     }
 
+    console.log('✅ Validación exitosa, actualizando en BD...');
     const userId = req.user?.id;
     await settingsService.updateHomepageVideoUrl(trimmedUrl, userId);
 
+    console.log('✅ Video actualizado correctamente');
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: "Video de la página principal actualizado correctamente",
       data: { videoUrl: trimmedUrl },
     });
   } catch (error) {
-    console.error('Error en updateHomepageVideo:', error?.message || error);
+    console.error('❌ Error en updateHomepageVideo:', error);
     next(error);
   }
 };
@@ -529,6 +535,7 @@ export const updateHomepageVideoConfig = async (req, res, next) => {
   try {
     const { type, url } = req.body;
 
+    console.log('📝 Actualizando config de video:', { type, url });
 
     // Validar tipo
     if (!['default', 'upload', 'youtube', 'drive'].includes(type)) {
@@ -556,12 +563,13 @@ export const updateHomepageVideoConfig = async (req, res, next) => {
     const userId = req.user?.id;
     await settingsService.updateHomepageVideoConfig(type, url || '', '', userId);
 
+    console.log('✅ Config de video actualizada');
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: 'Configuración de video actualizada correctamente'
     });
   } catch (error) {
-    console.error('Error en updateHomepageVideoConfig:', error?.message || error);
+    console.error('❌ Error en updateHomepageVideoConfig:', error);
     next(error);
   }
 };
@@ -573,6 +581,7 @@ export const updateHomepageVideoConfig = async (req, res, next) => {
  */
 export const uploadHomepageVideo = async (req, res, next) => {
   try {
+    console.log('Subiendo video, archivo recibido:', req.file?.originalname);
 
     if (!req.file) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -601,17 +610,20 @@ export const uploadHomepageVideo = async (req, res, next) => {
     const userId = req.user?.id;
     const filePath = await settingsService.saveUploadedVideo(req.file, userId);
 
+    console.log("Controller: Path received from saveUploadedVideo:", filePath);
 
     // Actualizar configuración para usar el archivo subido
+    console.log("Controller: Calling updateHomepageVideoConfig with:", { type: 'upload', url: '', file: filePath });
     await settingsService.updateHomepageVideoConfig('upload', '', filePath, userId);
 
+    console.log('Video subido correctamente:', filePath);
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: 'Video subido correctamente',
       data: { filePath }
     });
   } catch (error) {
-    console.error('Error en uploadHomepageVideo:', error?.message || error);
+    console.error('Error en uploadHomepageVideo:', error);
     next(error);
   }
 };

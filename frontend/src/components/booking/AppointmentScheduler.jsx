@@ -26,8 +26,6 @@ import FormularioCita from "./formulario";
 import usePageSEO from "../../hooks/usePageSEO";
 import { API_BASE_URL } from "../../config/api";
 
-const BRAND_NAME = import.meta?.env?.VITE_BRAND_NAME || "Barbería";
-
 /**
  * Normaliza el ID de servicio que se enviará al backend:
  * - Si viene de ofertas (no tiene id de servicio), retorna null (se usa serviceLabel)
@@ -78,9 +76,9 @@ function AppointmentScheduler() {
 
   // SEO específico para la página de citas
   usePageSEO({
-    title: `Agendar Cita | ${BRAND_NAME}`,
+    title: "Agendar Cita | Khoopper BarberShop",
     description:
-      `Reserva tu cita en ${BRAND_NAME} en tres pasos: elige tu servicio, selecciona tu profesional y escoge fecha y hora. Confirmación rápida por WhatsApp.`,
+      "Reserva tu cita en Khoopper BarberShop en tres pasos: elige tu servicio, selecciona tu barbero y escoge fecha y hora. Confirmación rápida por WhatsApp.",
     keywords:
       "agendar cita barbería, reservar corte de cabello, corte + barba, barbería premium, citas barbero, agenda tu cita",
     path: "/citas",
@@ -274,7 +272,7 @@ function AppointmentScheduler() {
       : "Fecha no especificada";
 
     const message = encodeURIComponent(
-      `¡Hola! Me gustaría reservar una cita en ${BRAND_NAME}.
+      `¡Hola! Me gustaría reservar una cita en Khoopper BarberShop.
 
 - Servicio / Promo: ${serviceName}
 - Barbero: ${barberName}
@@ -847,7 +845,7 @@ Por favor, confirma mi reserva. ¡Gracias!`
                           <div className="flex items-center gap-2">
                             <span className="hidden md:block h-[1px] w-10 bg-white/30" />
                             <span className="text-[11px] uppercase tracking-[0.2em] text-neutral-400">
-                              {`${BRAND_NAME} Team`}
+                              Khoopper BarberShop Team
                             </span>
                           </div>
                         </div>

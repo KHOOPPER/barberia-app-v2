@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
   <head>
-    <script>
-      (function () {
-        // Vite reemplaza %VITE_ADMIN_PATH% si esta definido.
-        // Si no esta definido, quedara como literal y se usara el fallback.
-        var v = "%VITE_ADMIN_PATH%";
-        var resolved = (v && !String(v).includes("VITE_ADMIN_PATH") ? v : "/admin").trim();
-        if (!resolved) resolved = "/admin";
-        if (!resolved.startsWith("/")) resolved = "/" + resolved;
-        window.__ADMIN_PATH__ = resolved.replace(/\/+$/, "");
-      })();
-    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>BarberShop Premium | Barbería Exclusiva</title>
+    
+    <!-- Performance Hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- ============================
          SEO PRINCIPAL

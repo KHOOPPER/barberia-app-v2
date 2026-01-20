@@ -26,7 +26,6 @@ import { logout } from "../../utils/api.js";
 import { API_BASE_URL } from "../../config/api.js";
 import { useAdminBackgroundImage } from "../../hooks/useSettings.js";
 import logo from "../../assets/logo.png";
-import { withAdminPath, getAdminBasePath } from "../../config/adminPath.js";
 
 /**
  * Layout del panel administrativo con menú hamburguesa optimizado
@@ -72,49 +71,49 @@ export default function AdminLayout() {
         id: "dashboard",
         label: "Dashboard",
         icon: BarChart3,
-        path: withAdminPath(""),
+        path: "/adminator009",
       },
       {
         id: "clients",
         label: "Clientes",
         icon: UserCheck,
-        path: withAdminPath("/clients"),
+        path: "/adminator009/clients",
       },
       {
         id: "reservations",
         label: "Reservas",
         icon: Calendar,
-        path: withAdminPath("/reservations"),
+        path: "/adminator009/reservations",
       },
       {
         id: "barbers",
         label: "Barberos",
         icon: Users,
-        path: withAdminPath("/barbers"),
+        path: "/adminator009/barbers",
       },
       {
         id: "services",
         label: "Servicios",
         icon: Scissors,
-        path: withAdminPath("/services"),
+        path: "/adminator009/services",
       },
       {
         id: "offers",
         label: "Ofertas",
         icon: Gift,
-        path: withAdminPath("/offers"),
+        path: "/adminator009/offers",
       },
       {
         id: "products",
         label: "Productos",
         icon: ShoppingBag,
-        path: withAdminPath("/products"),
+        path: "/adminator009/products",
       },
       {
         id: "settings",
         label: "Ajustes",
         icon: Settings,
-        path: withAdminPath("/settings"),
+        path: "/adminator009/settings",
       },
     ],
     []
@@ -123,7 +122,7 @@ export default function AdminLayout() {
   // Callbacks memoizados para mejor rendimiento
   const handleLogout = useCallback(() => {
     logout();
-    navigate(getAdminBasePath());
+    navigate("/adminator009");
     window.location.reload();
   }, [navigate]);
 
@@ -146,9 +145,8 @@ export default function AdminLayout() {
   // Función memoizada para verificar si una ruta está activa
   const isActive = useCallback(
     (path) => {
-      const adminBase = getAdminBasePath();
-      if (path === adminBase) {
-        return location.pathname === adminBase;
+      if (path === "/adminator009") {
+        return location.pathname === "/adminator009";
       }
       return location.pathname.startsWith(path);
     },

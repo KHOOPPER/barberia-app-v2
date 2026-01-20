@@ -244,19 +244,21 @@ export const getHomepageVideoConfig = async () => {
     const result = await pool.query(`
       SELECT key, value 
       FROM settings 
-      WHERE key IN ('homepage_video_type', 'homepage_video_url', 'homepage_video_file')
+      WHERE key IN ('homepage_video_type', 'homepage_video_url', 'homepage_video_file', 'homepage_hero_images')
     `);
 
     const config = {
       type: 'default',
       url: '',
-      file: ''
+      file: '',
+      images: []
     };
 
     result.rows.forEach(row => {
       if (row.key === 'homepage_video_type') config.type = row.value || 'default';
       if (row.key === 'homepage_video_url') config.url = row.value || '';
       if (row.key === 'homepage_video_file') config.file = row.value || '';
+      if (row.key === 'homepage_hero_images') config.images = row.value ? JSON.parse(row.value) : [];
     });
 
     return config;
@@ -271,6 +273,7 @@ export const getHomepageVideoConfig = async () => {
  */
 export const updateHomepageVideoConfig = async (type, url, file, userId = null) => {
   try {
+    console.log(`Service: updateHomepageVideoConfig called with type=${type}, file=${file}, url=${url}`);
 
     // Actualizar los 3 settings
     await pool.query(`
@@ -286,6 +289,7 @@ export const updateHomepageVideoConfig = async (type, url, file, userId = null) 
       RETURNING *
     `, [file || '', userId]);
 
+    console.log("Service: File update result:", resultFile.rowCount > 0 ? "Updated row" : "No row updated");
 
     logger.info(`Homepage video config updated by user ${userId || 'system'}: type=${type}`);
     return { type, url, file };
@@ -323,6 +327,60 @@ export const saveUploadedVideo = async (file, userId = null) => {
     return relativePath;
   } catch (error) {
     logger.error("Error al guardar video subido", { error: error.message });
+    throw error;
+  }
+};
+
+/**
+ * Guarda imágenes del hero subidas
+ */
+export const saveUploadedHeroImage = async (file, userId = null) => {
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    // Crear directorio si no existe
+    const uploadDir = path.join(process.cwd(), 'uploads', 'hero');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    // Generar nombre único
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    const filename = `hero-${timestamp}-${Math.round(Math.random() * 1000)}${ext}`;
+    const filepath = path.join(uploadDir, filename);
+
+    // Mover archivo
+    await fs.rename(file.path, filepath);
+
+    // Retornar ruta relativa
+    const relativePath = `/uploads/hero/${filename}`;
+    logger.info(`Hero image uploaded by user ${userId || 'system'}: ${relativePath}`);
+
+    return relativePath;
+  } catch (error) {
+    logger.error("Error al guardar imagen hero subida", { error: error.message });
+    throw error;
+  }
+};
+
+/**
+ * Actualiza la lista de imágenes del hero
+ */
+export const setHeroImages = async (images, userId = null) => {
+  try {
+    await pool.query(`
+      INSERT INTO settings (key, value, updated_at, updated_by)
+      VALUES ('homepage_hero_images', $1, NOW(), $2)
+      ON CONFLICT (key) DO UPDATE SET
+        value = EXCLUDED.value,
+        updated_at = NOW(),
+        updated_by = EXCLUDED.updated_by
+    `, [JSON.stringify(images), userId]);
+
+    logger.info(`Hero images updated by user ${userId || 'system'}`);
+    return images;
+  } catch (error) {
+    logger.error("Error al actualizar hero images", { error: error.message });
     throw error;
   }
 };

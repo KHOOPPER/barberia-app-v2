@@ -12,6 +12,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import logger from "./utils/logger.js";
@@ -95,14 +96,14 @@ const isLocalNetworkIP = (url) => {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
-    
+
     // Verificar si es una IP de red local
     const localNetworkPatterns = [
       /^192\.168\.\d{1,3}\.\d{1,3}$/,  // 192.168.x.x
       /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,  // 10.x.x.x
       /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,  // 172.16-31.x.x
     ];
-    
+
     return localNetworkPatterns.some(pattern => pattern.test(hostname));
   } catch {
     return false;
@@ -115,7 +116,7 @@ const corsOptions = {
     const allowedOrigins = process.env.FRONTEND_URL
       ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
       : ["http://localhost:5173"];
-    
+
     // Agregar localhost y 127.0.0.1 por defecto en desarrollo (común en desarrollo local)
     if (process.env.NODE_ENV !== "production") {
       // Agregar variantes comunes de localhost si no están ya en la lista
@@ -130,18 +131,18 @@ const corsOptions = {
           allowedOrigins.push(variant);
         }
       });
-      
+
       // En desarrollo, permitir IPs de red local (para acceso desde otros dispositivos)
       if (origin && isLocalNetworkIP(origin)) {
         return callback(null, true);
       }
     }
-    
+
     // Permitir requests sin origin (mobile apps, Postman, etc.) solo en desarrollo
     if (process.env.NODE_ENV !== "production" && !origin) {
       return callback(null, true);
     }
-    
+
     // Validar que el origen esté en la lista blanca explícita
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -197,6 +198,20 @@ app.use("/api/", limiter);
 app.use("/api/", csrfProtection);
 
 // ============================================================
+// OPTIMIZACIÓN DE RENDIMIENTO
+// Compresión de respuestas (Gzip/Brotli) para reducir tamaño de transferencia
+// ============================================================
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Nivel de compresión balanceado (velocidad/tamaño)
+}));
+
+// ============================================================
 // MIDDLEWARES GENERALES
 // He configurado estos middlewares para procesar requests y logging
 // ============================================================
@@ -207,12 +222,12 @@ app.use(cookieParser());
 
 // Body parser con límites de seguridad
 // He establecido límites para prevenir ataques de tamaño de payload
-app.use(express.json({ 
+app.use(express.json({
   limit: "10mb",
   strict: true
 }));
-app.use(express.urlencoded({ 
-  extended: true, 
+app.use(express.urlencoded({
+  extended: true,
   limit: "10mb",
   parameterLimit: 100
 }));
@@ -234,11 +249,29 @@ if (process.env.NODE_ENV !== "production") {
 // He configurado estas rutas para servir archivos estáticos de manera eficiente
 // ============================================================
 
-// Servir imágenes desde la carpeta uploads (barberos, servicios, productos, ofertas)
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Servir imágenes desde la carpeta uploads con caché agresivo
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
+  maxAge: '1y', // Cachear por 1 año
+  etag: true,
+  immutable: true, // El contenido no cambiará
+  setHeaders: (res, path) => {
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
-// Servir assets del frontend (logo y fondo personalizados)
-app.use("/src/assets", express.static(path.join(__dirname, "../../frontend/src/assets")));
+// Servir assets del frontend con caché agresivo
+app.use("/src/assets", express.static(path.join(__dirname, "../../frontend/src/assets"), {
+  maxAge: '1y',
+  etag: true,
+  immutable: true,
+  setHeaders: (res, path) => {
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
 // ============================================================
 // RUTAS

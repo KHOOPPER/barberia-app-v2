@@ -14,6 +14,19 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
+// Configurar multer para subida de imágenes
+const uploadImages = multer({
+    dest: 'uploads/hero/',
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB por imagen
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten imágenes'));
+        }
+    }
+});
+
 const router = Router();
 
 // ============================================================
@@ -48,6 +61,7 @@ router.put("/homepage-video", authenticate, requireAdmin, settingsController.upd
 router.get("/homepage-video-config", settingsController.getHomepageVideoConfig);
 router.put("/homepage-video-config", authenticate, requireAdmin, settingsController.updateHomepageVideoConfig);
 router.post("/homepage-video-upload", authenticate, requireAdmin, upload.single('video'), settingsController.uploadHomepageVideo);
+router.post("/homepage-hero-images", authenticate, requireAdmin, uploadImages.array('images', 3), settingsController.uploadHeroImages);
 
 // ============================================================
 // RUTAS GENÉRICAS / DINÁMICAS (Deben ir al FINAL)

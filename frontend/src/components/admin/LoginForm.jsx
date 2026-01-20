@@ -7,7 +7,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../utils/api.js";
 import GlassCard from "../ui/GlassCard";
-import { getAdminBasePath } from "../../config/adminPath.js";
 
 /**
  * Formulario de login para administradores
@@ -36,7 +35,7 @@ export default function LoginForm({ onLoginSuccess }) {
         }
         // Solo navegar si estamos usando navigate (no cuando estamos en ProtectedRoute)
         if (navigate) {
-          navigate(getAdminBasePath());
+          navigate("/adminator009");
         }
       } else {
         setError("Credenciales inválidas");

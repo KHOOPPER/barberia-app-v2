@@ -1,0 +1,27 @@
+{
+  "name": "Khoopper BarberShop",
+  "short_name": "Khoopper",
+  "description": "Barbería premium en El Salvador. Cortes modernos, fades y barba definida. Agenda tu cita online.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#0d0d0d",
+  "icons": [
+    {
+      "src": "/icons/barber-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/barber-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "business"],
+  "screenshots": []
+}

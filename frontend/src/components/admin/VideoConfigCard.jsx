@@ -1,37 +1,63 @@
-import { useState, useCallback } from 'react';
-import { Video, Upload, X } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Image as ImageIcon, Upload, X, Trash2, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { API_BASE_URL } from '../../config/api';
-import { getYouTubeEmbedUrl, getGoogleDriveEmbedUrl, validateVideoFile } from '../../utils/videoHelpers';
 
-export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
+export default function VideoConfigCard({ videoType, videoUrl, heroImages = [], onUpdate }) {
     const [showModal, setShowModal] = useState(false);
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [previews, setPreviews] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState('');
 
+    // Initialize previews with existing images if available
+    useEffect(() => {
+        if (heroImages && heroImages.length > 0) {
+            // Only set if we are not currently selecting new files
+            if (selectedFiles.length === 0) {
+                // We don't set previews here because previews are for *new* files usually, 
+                // but we can show existing images in the main card.
+            }
+        }
+    }, [heroImages, selectedFiles.length]);
+
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 3) {
+            setError('Máximo 3 imágenes');
+            return;
+        }
+
+        setSelectedFiles(files);
+        setError('');
+
+        // Generate previews
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setPreviews(newPreviews);
+    };
+
     const handleFileUpload = useCallback(async () => {
-        if (!selectedFile) {
-            setError('Selecciona un archivo');
+        if (selectedFiles.length === 0) {
+            setError('Selecciona al menos una imagen');
             return;
         }
 
         try {
-            validateVideoFile(selectedFile);
             setUpdating(true);
             setError('');
-            setUploadProgress(10); // Simular inicio
+            setUploadProgress(10);
 
             const formData = new FormData();
-            formData.append('video', selectedFile);
+            selectedFiles.forEach(file => {
+                formData.append('images', file);
+            });
 
-            // Usar fetch en lugar de XHR para mejor manejo de credenciales
-            const res = await fetch(`${API_BASE_URL}/settings/homepage-video-upload`, {
+            const res = await fetch(`${API_BASE_URL}/settings/homepage-hero-images`, {
                 method: 'POST',
                 body: formData,
-                credentials: 'include', // Importante para enviar cookies de sesión
+                credentials: 'include',
             });
 
             if (!res.ok) {
@@ -41,19 +67,29 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
 
             setUploadProgress(100);
 
-            // El endpoint de upload ya actualiza el tipo a 'upload' y guarda el archivo.
-            // No es necesario llamar a updateHomepageVideoConfig nuevamente.
-
+            // Close modal and reload
             setShowModal(false);
-            localStorage.setItem('settings_success_message', 'Video subido correctamente');
+            localStorage.setItem('settings_success_message', 'Imágenes del hero actualizadas correctamente');
             window.location.reload();
+
         } catch (err) {
             setError(err.message);
             setUploadProgress(0);
         } finally {
             setUpdating(false);
         }
-    }, [selectedFile]);
+    }, [selectedFiles]);
+
+    const removeFile = (index) => {
+        const newFiles = [...selectedFiles];
+        newFiles.splice(index, 1);
+        setSelectedFiles(newFiles);
+
+        const newPreviews = [...previews];
+        URL.revokeObjectURL(newPreviews[index]);
+        newPreviews.splice(index, 1);
+        setPreviews(newPreviews);
+    };
 
     return (
         <>
@@ -65,27 +101,42 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
                             border: '1px solid rgba(156, 163, 175, 0.3)',
                         }}
                     >
-                        <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                        <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs uppercase tracking-wider text-white/50 mb-1">
                             Página Principal
                         </p>
                         <h3 className="text-base sm:text-lg font-semibold text-white leading-tight">
-                            Video de Fondo
+                            Imágenes del Hero
                         </h3>
                     </div>
                 </div>
 
-                <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                    <p className="text-xs text-white/50 mb-1">Estado:</p>
-                    <p className="text-sm text-white font-medium flex items-center gap-2">
-                        {videoType === 'upload' ? (
-                            <><span className="w-2 h-2 rounded-full bg-green-500"></span> Video cargado</>
-                        ) : (
-                            <><span className="w-2 h-2 rounded-full bg-yellow-500"></span> Sin video personalizado</>
-                        )}
-                    </p>
+                <div className="mb-4">
+                    {heroImages && heroImages.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            {heroImages.map((img, idx) => (
+                                <div key={idx} className="aspect-video rounded-lg overflow-hidden bg-white/5 border border-white/10 relative group">
+                                    <img
+                                        src={img.startsWith('http') ? img : `${API_BASE_URL.replace(/\/api$/, '')}${img}`}
+                                        alt={`Hero ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute top-1 right-1 bg-black/60 px-1.5 py-0.5 rounded text-[10px] text-white">
+                                        {idx + 1}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                            <p className="text-xs text-white/50 mb-1">Estado:</p>
+                            <p className="text-sm text-white font-medium flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Sin imágenes personalizadas
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <button
@@ -96,7 +147,7 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
                     }}
                 >
                     <Upload className="w-4 h-4" />
-                    Subir Video Nuevo
+                    {heroImages.length > 0 ? 'Cambiar Imágenes' : 'Subir Imágenes'}
                 </button>
             </div>
 
@@ -118,7 +169,7 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-white">Subir Video de Fondo</h3>
+                                <h3 className="text-lg font-semibold text-white">Subir Imágenes del Hero</h3>
                                 <button onClick={() => setShowModal(false)} className="p-2 rounded-full hover:bg-white/10 transition-colors">
                                     <X className="w-5 h-5 text-white" />
                                 </button>
@@ -132,26 +183,45 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
                                 )}
 
                                 <div className="space-y-3">
-                                    <div className="p-8 border-2 border-dashed border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center text-center cursor-pointer relative">
-                                        <input
-                                            type="file"
-                                            accept="video/mp4,video/webm,video/quicktime"
-                                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        />
-                                        <Upload className={`w-10 h-10 mb-3 ${selectedFile ? 'text-blue-400' : 'text-white/40'}`} />
+                                    {/* Area de carga / Previews */}
+                                    <div className="min-h-[160px] p-4 border-2 border-dashed border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center text-center cursor-pointer relative overflow-hidden">
 
-                                        {selectedFile ? (
-                                            <div>
-                                                <p className="text-white font-medium break-all">{selectedFile.name}</p>
-                                                <p className="text-white/50 text-xs mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                        {selectedFiles.length > 0 ? (
+                                            <div className="w-full grid grid-cols-3 gap-2 relative z-10">
+                                                {previews.map((preview, idx) => (
+                                                    <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group">
+                                                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                                            className="absolute top-1 right-1 bg-red-500/80 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {selectedFiles.length < 3 && (
+                                                    <div className="aspect-square rounded-lg border border-white/20 flex items-center justify-center">
+                                                        <Plus className="w-6 h-6 text-white/30" />
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div>
-                                                <p className="text-white font-medium">Click para seleccionar video</p>
-                                                <p className="text-white/50 text-xs mt-1">MP4, WebM o MOV (Máx 50MB)</p>
-                                            </div>
+                                            <>
+                                                <Upload className="w-10 h-10 mb-3 text-white/40" />
+                                                <div>
+                                                    <p className="text-white font-medium">Click para seleccionar</p>
+                                                    <p className="text-white/50 text-xs mt-1">Máximo 3 imágenes</p>
+                                                </div>
+                                            </>
                                         )}
+
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handleFileSelect}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                        />
                                     </div>
 
                                     {uploadProgress > 0 && (
@@ -171,11 +241,11 @@ export default function VideoConfigCard({ videoType, videoUrl, onUpdate }) {
 
                                     <button
                                         onClick={handleFileUpload}
-                                        disabled={!selectedFile || updating}
+                                        disabled={selectedFiles.length === 0 || updating}
                                         className="w-full px-4 py-3 rounded-lg font-bold text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                                         style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}
                                     >
-                                        {updating ? 'Procesando...' : 'Confirmar y Subir'}
+                                        {updating ? 'Procesando...' : 'Confirmar y Actualizar'}
                                     </button>
                                 </div>
                             </div>

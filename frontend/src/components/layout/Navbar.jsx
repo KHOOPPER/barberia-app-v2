@@ -102,6 +102,15 @@ function Navbar() {
     }, 300);
   }, [navigate, scrollToTop]);
 
+  // PREFETCHING STRATEGY
+  const prefetchHome = () => import("../home/Inicio");
+  const prefetchAbout = () => import("../layout/Quienes");
+  const prefetchBooking = () => {
+    import("../services/Services");
+    import("../barbers/BarberList");
+    import("../booking/AppointmentScheduler");
+  };
+
   const handleLogoClick = useCallback(() => {
     setIsOpen(false);
     const currentPath = location.pathname;
@@ -156,7 +165,7 @@ function Navbar() {
         >
           <img
             src={currentLogo}
-            alt="Barbershop logo"
+            alt="KHOOPPER Barbershop"
             className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               if (e.target.src !== logo) {
@@ -181,6 +190,7 @@ function Navbar() {
           <NavLink
             to="/"
             onClick={() => handleNavigate("/")}
+            onMouseEnter={prefetchHome}
             className={({ isActive }) => linkClasses(isActive)}
           >
             INICIO
@@ -189,6 +199,7 @@ function Navbar() {
           <NavLink
             to="/quienes-somos"
             onClick={() => handleNavigate("/quienes-somos")}
+            onMouseEnter={prefetchAbout}
             className={({ isActive }) => linkClasses(isActive)}
           >
             QUIÉNES SOMOS
@@ -197,6 +208,7 @@ function Navbar() {
           <NavLink
             to="/citas"
             onClick={() => handleNavigate("/citas")}
+            onMouseEnter={prefetchBooking}
             className={({ isActive }) =>
               `
               ${baseLink}

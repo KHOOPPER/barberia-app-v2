@@ -1,9 +1,10 @@
 User-agent: *
 Allow: /
 
-# Deshabilitar indexacion del panel administrativo (ruta por defecto)
-Disallow: /admin/
-Disallow: /admin/*
+# Deshabilitar indexación del panel administrativo
+Disallow: /adminator009/
+Disallow: /adminator009/*
 
+# Sitemap para buscadores
 # IMPORTANTE: Reemplace "https://tudominio.com" con su dominio real antes de desplegar
 Sitemap: https://tudominio.com/sitemap.xml

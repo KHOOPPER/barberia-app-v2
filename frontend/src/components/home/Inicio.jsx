@@ -2,7 +2,7 @@ import { Calendar, Scissors, Sparkles, ShoppingBag, Plus, ArrowRight, Award, Clo
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { API_BASE_URL } from "../../config/api.js";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import usePageSEO from "../../hooks/usePageSEO";
 import { useCart } from "../../contexts/CartContext";
 import ServiceBookingModal from "../cart/ServiceBookingModal";
@@ -183,7 +183,17 @@ export default function Inicio() {
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesSectionEnabled, setServicesSectionEnabled] = useState(true);
-  const [videoConfig, setVideoConfig] = useState({ type: 'default', url: '', file: '' });
+  const [videoConfig, setVideoConfig] = useState({ type: 'default', url: '', file: '', images: [] });
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (videoConfig.type === 'images' && videoConfig.images?.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % videoConfig.images.length);
+      }, 7000);
+      return () => clearInterval(interval);
+    }
+  }, [videoConfig]);
 
   // Cargar configuración de video multi-fuente
   useEffect(() => {
@@ -355,7 +365,21 @@ export default function Inicio() {
       >
 
         {/* Renderizado condicional según tipo de video */}
-        {videoConfig.type === 'youtube' && videoConfig.url && getYouTubeEmbedUrl(videoConfig.url) ? (
+        {/* Renderizado condicional según tipo de video */}
+        {videoConfig.type === 'images' && videoConfig.images && videoConfig.images.length > 0 ? (
+          <AnimatePresence mode="popLayout">
+            <motion.img
+              key={currentImageIndex}
+              src={videoConfig.images[currentImageIndex].startsWith('http') ? videoConfig.images[currentImageIndex] : `${API_BASE_URL.replace(/\/api$/, '')}${videoConfig.images[currentImageIndex]}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.5 }}
+              className="absolute inset-0 w-full h-full object-cover brightness-[0.60]"
+              alt="Hero background"
+            />
+          </AnimatePresence>
+        ) : videoConfig.type === 'youtube' && videoConfig.url && getYouTubeEmbedUrl(videoConfig.url) ? (
           <iframe
             className="absolute inset-0 w-full h-full object-cover brightness-[0.70] will-change-transform pointer-events-none"
             src={getYouTubeEmbedUrl(videoConfig.url)}

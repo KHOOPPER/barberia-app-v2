@@ -27,7 +27,7 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     try {
-      const savedCart = localStorage.getItem("barbershop_cart") || localStorage.getItem("khoopper_cart");
+      const savedCart = localStorage.getItem("khoopper_cart");
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         return Array.isArray(parsed) ? parsed : [];
@@ -59,7 +59,7 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     if (isInitialized) {
-      localStorage.setItem("barbershop_cart", JSON.stringify(cartItems));
+      localStorage.setItem("khoopper_cart", JSON.stringify(cartItems));
     }
   }, [cartItems, isInitialized]);
 

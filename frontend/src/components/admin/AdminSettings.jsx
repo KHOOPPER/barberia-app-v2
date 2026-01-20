@@ -44,6 +44,7 @@ export default function AdminSettings() {
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoType, setVideoType] = useState('default'); // default, upload, youtube, drive
   const [videoUrl, setVideoUrl] = useState('');
+  const [heroImages, setHeroImages] = useState([]);
   const [videoFile, setVideoFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [updatingVideo, setUpdatingVideo] = useState(false);
@@ -147,6 +148,7 @@ export default function AdminSettings() {
           if (data.data) {
             setVideoType(data.data.type || 'default');
             setVideoUrl(data.data.url || '');
+            setHeroImages(data.data.images || []);
           }
         }
       } catch (error) {
@@ -614,6 +616,7 @@ export default function AdminSettings() {
             <VideoConfigCard
               videoType={videoType}
               videoUrl={videoUrl}
+              heroImages={heroImages}
               onUpdate={() => window.location.reload()}
             />
           </GlassCard>

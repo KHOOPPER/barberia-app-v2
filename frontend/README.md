@@ -40,13 +40,7 @@ cp .env.example .env
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/api
-VITE_ADMIN_PATH=/admin
 ```
-
-### Ruta del panel administrativo
-
-Por defecto, el panel administrativo se sirve bajo `/admin`. Puede cambiarse con `VITE_ADMIN_PATH` (por ejemplo `/gestion`), lo cual ajusta rutas internas y la configuracion PWA asociada.
-
 
 Ajuste `VITE_API_BASE_URL` si su backend corre en otro puerto/host.
 
