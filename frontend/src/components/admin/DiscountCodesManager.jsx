@@ -245,6 +245,7 @@ export default function DiscountCodesManager({ displayOnly = false, showFormOuts
 
     window.addEventListener('open-discount-form', handleOpenForm);
     return () => window.removeEventListener('open-discount-form', handleOpenForm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFormOutside]);
 
   // Escuchar evento de actualización

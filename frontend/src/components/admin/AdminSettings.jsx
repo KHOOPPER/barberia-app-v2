@@ -1,6 +1,6 @@
 
 import { useEffect, useState, useCallback } from "react";
-import { Upload, Image as ImageIcon, Settings2, Tag, X, Edit, Video } from "lucide-react";
+import { Upload, Image as ImageIcon, Tag, X, Edit } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import GlassCard from "../ui/GlassCard";

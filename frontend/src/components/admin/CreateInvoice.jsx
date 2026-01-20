@@ -251,7 +251,7 @@ export default function CreateInvoice({ onClose, onSave }) {
       const dateStr = today.toISOString().split('T')[0];
       const timeStr = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
 
-      const hasServices = invoiceItems.some(item => item.type === 'service');
+
       const firstServiceItem = invoiceItems.find(item => item.type === 'service');
 
       // Determinar el serviceId y serviceLabel apropiados
